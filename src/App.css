@@ -1,0 +1,25 @@
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.price-factory { color: #94a3b8; }
+.price-profit { color: var(--success); }
+.price-total { color: var(--text-primary); font-weight: 600; }
+
+.price-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.price-preview strong {
+  color: var(--accent-primary);
+  font-size: 1rem;
+}

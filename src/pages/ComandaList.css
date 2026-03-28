@@ -1,0 +1,309 @@
+.comanda-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stat-badge--open {
+  background: var(--warning-bg);
+  color: var(--warning);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Operation tips */
+.operation-tips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.tip-morning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.03));
+  color: var(--warning);
+}
+
+.tip-evening {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.03));
+  color: var(--accent-primary);
+}
+
+.tip-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.2rem;
+}
+
+.tip-desc {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+/* ── Filters bar ── */
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Date picker */
+.filter-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.35rem 0.875rem;
+  transition: border-color 0.15s;
+}
+
+.filter-date-wrap:focus-within {
+  border-color: var(--accent-primary);
+}
+
+.filter-date-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.filter-date-input {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  width: auto;
+  min-width: 130px;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.filter-date-today-btn {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.filter-date-today-btn:hover {
+  background: rgba(139, 92, 246, 0.22);
+}
+
+/* Search inside filter bar */
+.filter-search {
+  flex: 1;
+  max-width: 300px;
+  min-width: 0;
+}
+
+.status-tabs {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.status-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.status-tab:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.status-tab--active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Comanda Cards */
+.comanda-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.comanda-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.comanda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(30, 41, 59, 0.9);
+}
+
+/* Highlight open comandas */
+.comanda-card--open {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.comanda-card--open:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.comanda-card-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.comanda-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), #6d28d9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.comanda-info {
+  min-width: 0;
+}
+
+.comanda-vendor {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comanda-date,
+.comanda-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.comanda-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.comanda-total {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.comanda-saldo {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.saldo-devedor { color: var(--danger); }
+.saldo-ok      { color: var(--success); }
+
+.comanda-open-icon {
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .operation-tips {
+    grid-template-columns: 1fr;
+  }
+  .filters-bar {
+    gap: 0.5rem;
+  }
+  .filter-search {
+    max-width: 100%;
+    width: 100%;
+    order: 3;
+  }
+}
+
+@media (max-width: 480px) {
+  .comanda-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .comanda-card-right {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Reopen button inside list cards */
+.btn-reopen-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  margin-top: 0.2rem;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent-primary);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reopen-list:hover {
+  background: rgba(124, 58, 237, 0.22);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+

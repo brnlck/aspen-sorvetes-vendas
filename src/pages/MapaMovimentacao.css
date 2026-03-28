@@ -1,0 +1,433 @@
+/* ═══════════════════════════════════════
+   MAPA DE MOVIMENTAÇÃO DIÁRIA
+   Clean & Professional Excel-style report
+═══════════════════════════════════════ */
+
+.mapa-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Header ── */
+.mapa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.125rem;
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--accent-primary);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-print:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+/* ── Filters ── */
+.mapa-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+}
+
+.filter-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.filter-title strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.filter-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filter-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-group input[type="date"] {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  min-width: 150px;
+}
+
+/* ── Empty ── */
+.mapa-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.mapa-empty p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.mapa-empty span {
+  font-size: 0.875rem;
+}
+
+/* ── Table wrapper ── */
+.mapa-table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mapa-table-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mapa-row-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+}
+
+.mapa-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Table ── */
+.mapa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+  min-width: 900px;
+}
+
+/* Group header row */
+.th-group-row th,
+.th-products-row th {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.th-fixed {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-secondary);
+  text-align: left;
+  min-width: 160px;
+  max-width: 200px;
+  border-right: 2px solid var(--border-color);
+}
+
+.th-group {
+  text-align: center;
+  border-left: 1px solid var(--border-color);
+}
+
+.th-group--products {
+  background: rgba(139, 92, 246, 0.06);
+  color: var(--accent-primary);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.th-group--totals {
+  background: rgba(6, 182, 212, 0.06);
+  color: #06b6d4;
+  text-align: center;
+}
+
+.th-group--money {
+  background: rgba(245, 158, 11, 0.06);
+  color: var(--warning);
+  text-align: center;
+}
+
+.th-group--profit {
+  background: rgba(16, 185, 129, 0.06);
+  color: var(--success);
+  text-align: center;
+}
+
+.th-group--payments {
+  background: rgba(248, 113, 113, 0.06);
+  color: #f87171;
+  border-bottom: 1px solid rgba(248, 113, 113, 0.15);
+}
+
+.th-product {
+  text-align: center;
+  padding: 0.5rem 0.625rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.72rem;
+  border-left: 1px solid var(--border-color);
+}
+
+.th-payment {
+  text-align: center;
+  padding: 0.5rem 0.625rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.72rem;
+  display: table-cell;
+  align-items: center;
+  gap: 0.25rem;
+  border-left: 1px solid var(--border-color);
+}
+
+/* ── Body rows ── */
+.mapa-table tbody tr {
+  transition: background 0.15s;
+}
+
+.mapa-table tbody tr:hover td {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.row-even td { background: var(--bg-secondary); }
+.row-odd  td { background: rgba(255,255,255,0.012); }
+
+.mapa-table td {
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.td-vendor {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 160px;
+  max-width: 200px;
+  border-right: 2px solid var(--border-color);
+  font-weight: 600;
+}
+
+.row-even .td-vendor { background: var(--bg-secondary); }
+.row-odd  .td-vendor { background: rgba(255,255,255,0.012); }
+
+.vendor-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vendor-avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.td-qty {
+  text-align: center;
+  border-left: 1px solid rgba(255,255,255,0.04);
+}
+
+.td-total-qty {
+  text-align: center;
+  border-left: 2px solid rgba(6, 182, 212, 0.2);
+  font-size: 0.9rem;
+  color: #06b6d4;
+}
+
+.td-money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--warning);
+  font-weight: 600;
+  border-left: 2px solid rgba(245, 158, 11, 0.15);
+  white-space: nowrap;
+  padding-right: 1rem;
+}
+
+.td-profit {
+  text-align: center;
+  border-left: 2px solid rgba(16, 185, 129, 0.15);
+}
+
+.td-payment {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
+  padding-right: 1rem;
+}
+
+/* ── Pills & badges ── */
+.qty-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 24px;
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent-primary);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.qty-zero {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.profit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--success-bg);
+  color: var(--success);
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pay-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Totals row ── */
+.totals-row {
+  background: rgba(139, 92, 246, 0.05);
+  border-top: 2px solid var(--border-color);
+}
+
+.totals-row td {
+  padding: 0.875rem 0.75rem;
+  font-size: 0.825rem;
+}
+
+.td-totals-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: rgba(139, 92, 246, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-primary);
+  border-right: 2px solid var(--border-color);
+  border-top: 2px solid rgba(139, 92, 246, 0.3);
+}
+
+.td-totals {
+  border-top: 2px solid rgba(139, 92, 246, 0.15);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+/* ── Print styles ── */
+@media print {
+  .mapa-header button,
+  .mapa-filters,
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  .mapa-page { gap: 0.75rem; }
+
+  .mapa-table-wrap {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    border-radius: 0;
+  }
+
+  .mapa-table th,
+  .mapa-table td {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #ccc !important;
+    font-size: 10px;
+    padding: 5px 6px;
+  }
+
+  .vendor-avatar-sm { display: none; }
+  .qty-pill { background: none; color: #000; }
+  .profit-tag { background: none; color: #000; border: 1px solid #ccc; }
+  .totals-row td { background: #f5f5f5 !important; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .mapa-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-inputs {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .filter-group input[type="date"] {
+    min-width: 130px;
+  }
+}
