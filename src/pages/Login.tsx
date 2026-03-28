@@ -1,34 +1,48 @@
 import { useState } from 'react';
 import { IceCreamCone, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { supabase } from '../services/supabase';
 import './Login.css';
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-const VALID_EMAIL    = 'admin@aspensorvetes.com';
-const VALID_PASSWORD = 'admin123';
-
-export default function Login({ onLogin }: LoginProps) {
-  const [email, setEmail] = useState('');
+export default function Login() {
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      if (email === VALID_EMAIL && password === VALID_PASSWORD) {
-        onLogin();
-      } else {
-        setError('E-mail ou senha inválidos. Verifique as credenciais de acesso.');
-        setLoading(false);
+    try {
+      let loginEmail = identifier.trim();
+      
+      // If it looks like a CPF (only digits, dots and dashes), convert to internal email format
+      if (/^[\d.-]+$/.test(loginEmail)) {
+        loginEmail = `${loginEmail.replace(/\D/g, '')}@aspensorvetes.com`;
       }
-    }, 800);
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+      
+      // The App.tsx router will automatically redirect based on AuthProvider state change
+    } catch (err: unknown) {
+      console.error(err);
+      setError(
+        err instanceof Error && err.message === 'Invalid login credentials'
+          ? 'Credenciais inválidas. Verifique seu usuário e senha.'
+          : err instanceof Error ? err.message : 'Erro ao conectar. Tente novamente mais tarde.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,14 +71,14 @@ export default function Login({ onLogin }: LoginProps) {
           )}
 
           <div className="form-group">
-            <label className="form-label">E-mail</label>
+            <label className="form-label">E-mail ou CPF</label>
             <div className="input-wrapper">
               <Mail size={18} className="input-icon" />
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@aspensorvetes.com"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Seu e-mail ou CPF"
                 required
                 className="input-with-icon"
               />
@@ -105,10 +119,6 @@ export default function Login({ onLogin }: LoginProps) {
             )}
           </button>
         </form>
-
-        <p className="login-hint">
-          Credenciais: <span>admin@aspensorvetes.com</span> / <span>admin123</span>
-        </p>
       </div>
     </div>
   );

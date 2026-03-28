@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { db } from '../services/db';
+import type { Vendor, Product, Comanda } from '../types';
 import {
   PieChart, Pie, Cell, Tooltip,
   ResponsiveContainer
@@ -22,6 +23,7 @@ const DONUT_COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#3
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 // Tooltip customizado para os donuts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DonutTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   const { name, value, payload: p } = payload[0];
@@ -68,11 +70,26 @@ export default function Dashboard() {
   const [dateFrom, setDateFrom] = useState(monthStart);
   const [dateTo, setDateTo]     = useState(today);
 
-  const { vendors, products, comandas } = useMemo(() => ({
-    vendors:  db.getVendors(),
-    products: db.getProducts(),
-    comandas: db.getComandas(),
-  }), []);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [v, p, c] = await Promise.all([
+        db.getVendors(),
+        db.getProducts(),
+        db.getComandas()
+      ]);
+      setVendors(v);
+      setProducts(p);
+      setComandas(c);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   // ── Filtra apenas comandas FECHADAS no período ──────────────────────────────
   const filteredComandas = useMemo(() => {
@@ -177,6 +194,8 @@ export default function Dashboard() {
   };
 
   const hasDonutData = donutVolume.length > 0;
+
+  if (loading) return <div>Carregando...</div>;
 
   return (
     <div className="dashboard animate-fade-in">

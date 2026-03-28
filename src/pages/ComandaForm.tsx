@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
-import type { Comanda, ComandaItem, Payment, PaymentMethod, Product } from '../types';
+import type { Comanda, ComandaItem, Payment, PaymentMethod, Product, Vendor } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import {
   ArrowLeft, Plus, Trash2, Save, Lock, Unlock,
@@ -15,9 +15,9 @@ import './ComandaForm.css';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
   { value: 'Dinheiro', label: 'Dinheiro', icon: <Banknote size={16} /> },
-  { value: 'PIX',      label: 'PIX',      icon: <Smartphone size={16} /> },
-  { value: 'Crédito',  label: 'Crédito',  icon: <CreditCard size={16} /> },
-  { value: 'Débito',   label: 'Débito',   icon: <CreditCard size={16} /> },
+  { value: 'PIX', label: 'PIX', icon: <Smartphone size={16} /> },
+  { value: 'Crédito', label: 'Crédito', icon: <CreditCard size={16} /> },
+  { value: 'Débito', label: 'Débito', icon: <CreditCard size={16} /> },
 ];
 
 export default function ComandaForm() {
@@ -25,49 +25,61 @@ export default function ComandaForm() {
   const navigate = useNavigate();
   const isNew = !id;
 
-  const vendors     = useMemo(() => db.getVendors().filter(v => v.status === 'Ativo'), []);
-  const allProducts = useMemo(() => db.getProducts().filter(p => p.status === 'Ativo'), []);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
   // ── Form state ──
-  const [vendorId,  setVendorId]  = useState('');
-  const [date,      setDate]      = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [items,     setItems]     = useState<ComandaItem[]>([]);
-  const [discount,  setDiscount]  = useState(0);
-  const [payments,  setPayments]  = useState<Payment[]>([]);
-  const [status,    setStatus]    = useState<'Aberta' | 'Fechada'>('Aberta');
-  const [saving,    setSaving]    = useState(false);
-  const [saved,     setSaved]     = useState(false);
-  const [tab,       setTab]       = useState<'morning' | 'settlement'>('morning');
+  const [vendorId, setVendorId] = useState('');
+  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [items, setItems] = useState<ComandaItem[]>([]);
+  const [discount, setDiscount] = useState(0);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [status, setStatus] = useState<'Aberta' | 'Fechada'>('Aberta');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [tab, setTab] = useState<'morning' | 'settlement'>('morning');
 
   // ── Local string state for reposition inputs (allows clearing/correcting) ──
   const [repositionDraft, setRepositionDraft] = useState<Record<string, string>>({});
 
   // ── Dialogs ──
-  const [showCloseConfirm,  setShowCloseConfirm]  = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showReopenConfirm, setShowReopenConfirm] = useState(false);
 
   // ── New payment form ──
   const [newPayMethod, setNewPayMethod] = useState<PaymentMethod>('Dinheiro');
   const [newPayAmount, setNewPayAmount] = useState('');
 
-  // ── Load existing comanda ──
+  // ── Load existing comanda & lookups ──
   useEffect(() => {
-    if (!isNew && id) {
-      const c = db.getComandaById(id);
-      if (c) {
-        setVendorId(c.vendorId);
-        setDate(c.date);
-        setItems(c.items);
-        setDiscount(c.discount);
-        setPayments(c.payments);
-        setStatus(c.status);
-        // Pre-fill reposition drafts from saved data
-        const drafts: Record<string, string> = {};
-        c.items.forEach(i => { drafts[i.id] = i.quantityReposition > 0 ? String(i.quantityReposition) : ''; });
-        setRepositionDraft(drafts);
-        if (c.items.some(i => i.quantityReturn > 0)) setTab('settlement');
+    async function load() {
+      setLoadingInitial(true);
+      const [vData, pData] = await Promise.all([
+        db.getVendors(),
+        db.getProducts()
+      ]);
+      setVendors(vData.filter(v => v.status === 'Ativo'));
+      setAllProducts(pData.filter(p => p.status === 'Ativo'));
+
+      if (!isNew && id) {
+        const c = await db.getComandaById(id);
+        if (c) {
+          setVendorId(c.vendorId);
+          setDate(c.date);
+          setItems(c.items);
+          setDiscount(c.discount);
+          setPayments(c.payments);
+          setStatus(c.status);
+          const drafts: Record<string, string> = {};
+          c.items.forEach(i => { drafts[i.id] = i.quantityReposition > 0 ? String(i.quantityReposition) : ''; });
+          setRepositionDraft(drafts);
+          if (c.items.some(i => i.quantityReturn > 0)) setTab('settlement');
+        }
       }
+      setLoadingInitial(false);
     }
+    load();
   }, [id, isNew]);
 
   // ── Initialize items when vendor selected (new comanda) ──
@@ -134,18 +146,11 @@ export default function ComandaForm() {
   // Vendidos    = Carga Total  - Retorno
   const calcs = useMemo(() => {
     const productMap = Object.fromEntries(allProducts.map(p => [p.id, p]));
-    let totalSubtotalAspen = 0;
-    let totalProfit        = 0;
-    let totalQtdVendidos   = 0;
-
     const itemCalcs = items.map(item => {
-      const cargaTotal    = item.quantityOut + item.quantityReposition;
-      const vendidos      = Math.max(0, cargaTotal - item.quantityReturn);
+      const cargaTotal = item.quantityOut + item.quantityReposition;
+      const vendidos = Math.max(0, cargaTotal - item.quantityReturn);
       const subtotalAspen = vendidos * item.priceFactoryFrozen;
       const lucroVendedor = vendidos * item.profitVendorFrozen;
-      totalSubtotalAspen += subtotalAspen;
-      totalProfit        += lucroVendedor;
-      totalQtdVendidos   += vendidos;
       return {
         ...item,
         cargaTotal,
@@ -156,9 +161,13 @@ export default function ComandaForm() {
       };
     });
 
+    const totalSubtotalAspen = itemCalcs.reduce((acc, curr) => acc + curr.subtotalAspen, 0);
+    const totalProfit = itemCalcs.reduce((acc, curr) => acc + curr.lucroVendedor, 0);
+    const totalQtdVendidos = itemCalcs.reduce((acc, curr) => acc + curr.vendidos, 0);
+
     const totalWithDiscount = totalSubtotalAspen - discount;
-    const totalPaid         = payments.reduce((s, p) => s + p.amount, 0);
-    const saldoDevedor      = totalWithDiscount - totalPaid;
+    const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+    const saldoDevedor = totalWithDiscount - totalPaid;
 
     return {
       itemCalcs,
@@ -187,11 +196,11 @@ export default function ComandaForm() {
     };
 
     if (isNew) {
-      const c = db.saveComanda(comandaData);
+      const c = await db.saveComanda(comandaData);
       setSaved(true);
       setTimeout(() => navigate(`/comandas/${c.id}`), 600);
     } else if (id) {
-      db.updateComanda(id, comandaData);
+      await db.updateComanda(id, comandaData);
       setSaved(true);
       if (closeIt) {
         setTimeout(() => navigate('/comandas'), 600);
@@ -204,9 +213,9 @@ export default function ComandaForm() {
   };
 
   // ── Reopen ──
-  const handleReopen = () => {
+  const handleReopen = async () => {
     if (!id) return;
-    db.updateComanda(id, { status: 'Aberta', closedAt: undefined });
+    await db.updateComanda(id, { status: 'Aberta', closedAt: undefined });
     setStatus('Aberta');
     setShowReopenConfirm(false);
     setSaved(true);
@@ -219,6 +228,8 @@ export default function ComandaForm() {
   const isClosed = status === 'Fechada';
   const vendor = vendors.find(v => v.id === vendorId);
   const availableProducts = allProducts.filter(p => !items.find(i => i.productId === p.id));
+
+  if (loadingInitial) return <div>Carregando comanda...</div>;
 
   return (
     <div className="comanda-form animate-fade-in">

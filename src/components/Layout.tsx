@@ -1,27 +1,31 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Package, ClipboardList,
-  FileBarChart2, LogOut, IceCreamCone, Menu, X, TableProperties
+  FileBarChart2, LogOut, IceCreamCone, Menu, X, TableProperties, ShieldCheck
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
 interface LayoutProps {
   children: React.ReactNode;
-  onLogout: () => void;
 }
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/vendors', label: 'Vendedores', icon: Users },
-  { to: '/products', label: 'Produtos', icon: Package },
-  { to: '/comandas', label: 'Vendas', icon: ClipboardList },
-  { to: '/reports', label: 'Relatórios', icon: FileBarChart2 },
-  { to: '/mapa', label: 'Mapa Diário', icon: TableProperties },
-];
-
-export default function Layout({ children, onLogout }: LayoutProps) {
+export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { profile, user, signOut } = useAuth();
+
+  const isAdmin = profile?.role === 'ADMIN';
+
+  const navItems = [
+    ...(isAdmin ? [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }] : []),
+    ...(isAdmin ? [{ to: '/vendors', label: 'Vendedores', icon: Users }] : []),
+    ...(isAdmin ? [{ to: '/products', label: 'Produtos', icon: Package }] : []),
+    { to: '/comandas', label: 'Vendas', icon: ClipboardList }, // Everyone has Vendas
+    ...(isAdmin ? [{ to: '/reports', label: 'Relatórios', icon: FileBarChart2 }] : []),
+    ...(isAdmin ? [{ to: '/mapa', label: 'Mapa Diário', icon: TableProperties }] : []),
+    ...(isAdmin ? [{ to: '/users', label: 'Usuários', icon: ShieldCheck }] : []),
+  ];
 
   return (
     <div className="layout">
@@ -38,7 +42,7 @@ export default function Layout({ children, onLogout }: LayoutProps) {
               <IceCreamCone size={22} />
             </div>
             <div>
-              <div className="sidebar-logo-title">Aspen Sorvetes - Vendas Carrinhos</div>
+              <div className="sidebar-logo-title">Aspen Sorvetes</div>
               <div className="sidebar-logo-sub">Vendas Carrinhos</div>
             </div>
           </div>
@@ -65,7 +69,7 @@ export default function Layout({ children, onLogout }: LayoutProps) {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="btn-logout" onClick={onLogout}>
+          <button className="btn-logout" onClick={signOut}>
             <LogOut size={18} />
             <span>Sair</span>
           </button>
@@ -83,8 +87,12 @@ export default function Layout({ children, onLogout }: LayoutProps) {
           </button>
           <div className="topbar-right">
             <div className="topbar-user">
-              <div className="topbar-user-avatar">A</div>
-              <span className="topbar-user-name">Administrador</span>
+              <div className="topbar-user-avatar">
+                {(profile?.name || user?.email || '?')[0].toUpperCase()}
+              </div>
+              <span className="topbar-user-name">
+                {profile?.name || user?.email || 'Usuário'}
+              </span>
             </div>
           </div>
         </header>

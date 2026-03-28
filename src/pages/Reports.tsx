@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { db } from '../services/db';
+import type { Vendor, Comanda } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -13,8 +14,23 @@ export default function Reports() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
 
-  const vendors = useMemo(() => db.getVendors(), []);
-  const allComandas = useMemo(() => db.getComandas(), []);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [allComandas, setAllComandas] = useState<Comanda[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [v, c] = await Promise.all([
+        db.getVendors(),
+        db.getComandas()
+      ]);
+      setVendors(v);
+      setAllComandas(c);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const monthStart = startOfMonth(new Date(year, month - 1, 1));
   const monthEnd = endOfMonth(new Date(year, month - 1, 1));
@@ -66,7 +82,7 @@ export default function Reports() {
       };
     }).filter(r => r.vendor.status === 'Ativo' || r.workedDays > 0)
       .sort((a, b) => b.totalProfit - a.totalProfit);
-  }, [vendors, allComandas, year, month]);
+  }, [vendors, allComandas, monthStart, monthEnd]);
 
   const totals = useMemo(() => {
     return report.reduce((acc, r) => ({
@@ -101,6 +117,8 @@ export default function Reports() {
   };
 
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
+
+  if (loading) return <div style={{ padding: '2rem' }}>Carregando relatórios...</div>;
 
   return (
     <div className="reports-page animate-fade-in">
@@ -147,7 +165,7 @@ export default function Reports() {
           <div className="kpi-label">Lucro Vendedores</div>
           <div className="kpi-value" style={{ fontSize: '1.4rem' }}>{formatCurrency(totals.profit)}</div>
         </div>
-        <div className="kpi-card" style={{ '--kpi-color': '#06b6d4' } as any}>
+        <div className="kpi-card" style={{ '--kpi-color': '#06b6d4' } as React.CSSProperties}>
           <div className="kpi-icon-wrap" style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>
             <CheckSquare size={20} />
           </div>

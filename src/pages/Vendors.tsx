@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { db } from '../services/db';
 import type { Vendor } from '../types';
 
@@ -67,12 +67,26 @@ export function VendorAvatar({
 }
 
 export default function Vendors() {
-  const [vendors, setVendors] = useState<Vendor[]>(() => db.getVendors());
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<VendorFormData>(empty);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchVendors = async () => {
+    const data = await db.getVendors();
+    setVendors(data);
+  };
+
+  useEffect(() => {
+    async function init() {
+      await fetchVendors();
+      setLoading(false);
+    }
+    init();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -101,21 +115,21 @@ export default function Vendors() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
     const payload = { ...form, photo: form.photo || undefined };
     if (editingId) {
-      db.updateVendor(editingId, payload);
+      await db.updateVendor(editingId, payload);
     } else {
-      db.saveVendor(payload);
+      await db.saveVendor(payload);
     }
-    setVendors(db.getVendors());
+    fetchVendors();
     setShowModal(false);
   };
 
-  const toggleStatus = (v: Vendor) => {
-    db.updateVendor(v.id, { status: v.status === 'Ativo' ? 'Inativo' : 'Ativo' });
-    setVendors(db.getVendors());
+  const toggleStatus = async (v: Vendor) => {
+    await db.updateVendor(v.id, { status: v.status === 'Ativo' ? 'Inativo' : 'Ativo' });
+    fetchVendors();
   };
 
   /** Read file as base64 */
@@ -135,9 +149,10 @@ export default function Vendors() {
     handleFileChange(file ?? null);
   };
 
+  if (loading) return <div>Carregando...</div>;
+
   return (
     <div className="crud-page animate-fade-in">
-      {/* Header */}
       <div className="crud-header">
         <div>
           <h1 className="title">Vendedores</h1>
@@ -325,7 +340,7 @@ export default function Vendors() {
                   <label className="form-label">Status</label>
                   <select
                     value={form.status}
-                    onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value as 'Ativo' | 'Inativo' }))}
                   >
                     <option value="Ativo">Ativo</option>
                     <option value="Inativo">Inativo</option>

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { db } from '../services/db';
+import type { Vendor, Product, Comanda } from '../types';
 import { format, parseISO, isWithinInterval, parse } from 'date-fns';
 import { Calendar, TableProperties, Printer, TrendingUp, Banknote, Smartphone, CreditCard } from 'lucide-react';
 import './MapaMovimentacao.css';
@@ -26,9 +27,26 @@ export default function MapaMovimentacao() {
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo,   setDateTo]   = useState(today);
 
-  const vendors  = useMemo(() => db.getVendors(), []);
-  const products = useMemo(() => db.getProducts(), []);
-  const allComandas = useMemo(() => db.getComandas(), []);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [allComandas, setAllComandas] = useState<Comanda[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [v, p, c] = await Promise.all([
+        db.getVendors(),
+        db.getProducts(),
+        db.getComandas()
+      ]);
+      setVendors(v);
+      setProducts(p);
+      setAllComandas(c);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   // Active products, in display order
   const activeProducts = useMemo(
@@ -146,6 +164,8 @@ export default function MapaMovimentacao() {
   const periodLabel = dateFrom === dateTo
     ? safeFormat(dateFrom)
     : `${safeFormat(dFrom)} – ${safeFormat(dTo)}`;
+
+  if (loading) return <div style={{ padding: '2rem' }}>Carregando mapa...</div>;
 
   return (
     <div className="mapa-page animate-fade-in">

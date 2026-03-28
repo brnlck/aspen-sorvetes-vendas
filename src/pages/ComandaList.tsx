@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { db } from '../services/db';
-import type { Comanda } from '../types';
+import type { Comanda, Vendor } from '../types';
 import { Link } from 'react-router-dom';
 import {
   Plus, Search, Calendar, Eye, Clock,
@@ -17,30 +17,41 @@ export default function ComandaList() {
   const [search,       setSearch]       = useState('');
   const [statusFilter, setStatusFilter] = useState<'Todas' | 'Aberta' | 'Fechada'>('Aberta');
   const [dateFilter,   setDateFilter]   = useState(todayStr);
-  const [comandas,     setComandas]     = useState<Comanda[]>(() =>
-    [...db.getComandas()].sort((a, b) => {
-      // Abertas primeiro, depois por data desc
-      if (a.status !== b.status) return a.status === 'Aberta' ? -1 : 1;
-      return b.date.localeCompare(a.date);
-    })
-  );
+  const [comandas,     setComandas]     = useState<Comanda[]>([]);
+  const [vendors,      setVendors]      = useState<Vendor[]>([]);
+  const [loading,      setLoading]      = useState(true);
 
-  const reload = () =>
-    setComandas([...db.getComandas()].sort((a, b) => {
+  useEffect(() => {
+    async function load() {
+      const cData = await db.getComandas();
+      const vData = await db.getVendors();
+      const sorted = [...cData].sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'Aberta' ? -1 : 1;
+        return b.date.localeCompare(a.date);
+      });
+      setComandas(sorted);
+      setVendors(vData);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const reload = async () => {
+    const cData = await db.getComandas();
+    setComandas([...cData].sort((a, b) => {
       if (a.status !== b.status) return a.status === 'Aberta' ? -1 : 1;
       return b.date.localeCompare(a.date);
     }));
+  };
 
-  const handleReopen = (e: React.MouseEvent, comandaId: string) => {
+  const handleReopen = async (e: React.MouseEvent, comandaId: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (window.confirm('Reabrir esta comanda para edição?')) {
-      db.updateComanda(comandaId, { status: 'Aberta', closedAt: undefined });
+      await db.updateComanda(comandaId, { status: 'Aberta', closedAt: undefined });
       reload();
     }
   };
-
-  const vendors = useMemo(() => db.getVendors(), []);
 
   const filtered = useMemo(() => {
     return comandas.filter(c => {
@@ -77,6 +88,8 @@ export default function ComandaList() {
     const paid  = c.payments.reduce((s, p) => s + p.amount, 0);
     return total - paid;
   };
+
+  if (loading) return <div>Carregando...</div>;
 
   return (
     <div className="comanda-list-page animate-fade-in">

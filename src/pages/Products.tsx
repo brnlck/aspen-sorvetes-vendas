@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { db } from '../services/db';
 import type { Product } from '../types';
 import {
@@ -19,11 +19,25 @@ const empty: ProductFormData = {
 };
 
 export default function Products() {
-  const [products, setProducts] = useState<Product[]>(() => db.getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(empty);
+
+  const fetchProducts = async () => {
+    const data = await db.getProducts();
+    setProducts(data);
+  };
+
+  useEffect(() => {
+    async function init() {
+      await fetchProducts();
+      setLoading(false);
+    }
+    init();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -49,7 +63,7 @@ export default function Products() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
     const data = {
       name: form.name.trim(),
@@ -58,21 +72,23 @@ export default function Products() {
       status: form.status,
     };
     if (editingId) {
-      db.updateProduct(editingId, data);
+      await db.updateProduct(editingId, data);
     } else {
-      db.saveProduct(data);
+      await db.saveProduct(data);
     }
-    setProducts(db.getProducts());
+    fetchProducts();
     setShowModal(false);
   };
 
-  const toggleStatus = (p: Product) => {
-    db.updateProduct(p.id, { status: p.status === 'Ativo' ? 'Inativo' : 'Ativo' });
-    setProducts(db.getProducts());
+  const toggleStatus = async (p: Product) => {
+    await db.updateProduct(p.id, { status: p.status === 'Ativo' ? 'Inativo' : 'Ativo' });
+    fetchProducts();
   };
 
   const formatCurrency = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  if (loading) return <div>Carregando...</div>;
 
   return (
     <div className="crud-page animate-fade-in">
@@ -225,7 +241,7 @@ export default function Products() {
                 <label className="form-label">Status</label>
                 <select
                   value={form.status}
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}
+                  onChange={e => setForm(f => ({ ...f, status: e.target.value as 'Ativo' | 'Inativo' }))}
                 >
                   <option value="Ativo">Ativo</option>
                   <option value="Inativo">Inativo</option>

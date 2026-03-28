@@ -1,0 +1,35 @@
+.user-management-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.table-header {
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.role-badge.admin {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.role-badge.operador {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.role-badge.vendedor {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
