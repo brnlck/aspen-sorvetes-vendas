@@ -9,6 +9,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { VendorAvatar } from './Vendors';
+import { useAuth } from '../contexts/AuthContext';
 import './ComandaList.css';
 
 const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -20,6 +21,10 @@ export default function ComandaList() {
   const [comandas,     setComandas]     = useState<Comanda[]>([]);
   const [vendors,      setVendors]      = useState<Vendor[]>([]);
   const [loading,      setLoading]      = useState(true);
+
+  const { profile } = useAuth();
+  const isOperator = profile?.role === 'OPERADOR';
+  const isVendor = profile?.role === 'VENDEDOR';
 
   useEffect(() => {
     async function load() {
@@ -107,9 +112,11 @@ export default function ComandaList() {
             <span className="stat-badge">{comandas.length} total</span>
           </p>
         </div>
-        <Link to="/comandas/new" className="btn-primary" id="btn-new-comanda">
-          <Plus size={18} /> Nova Comanda
-        </Link>
+        {!isVendor && (
+          <Link to="/comandas/new" className="btn-primary" id="btn-new-comanda">
+            <Plus size={18} /> Nova Comanda
+          </Link>
+        )}
       </div>
 
       {/* Operation Tips */}
@@ -190,9 +197,11 @@ export default function ComandaList() {
                 ? 'Nenhuma comanda para hoje ainda'
                 : `Nenhuma comanda em ${format(parseISO(dateFilter), "dd 'de' MMM", { locale: ptBR })}`}
             </p>
-            <Link to="/comandas/new" className="btn-primary">
-              Abrir primeira comanda do dia
-            </Link>
+            {!isVendor && (
+              <Link to="/comandas/new" className="btn-primary">
+                Abrir primeira comanda do dia
+              </Link>
+            )}
           </div>
         </div>
       ) : (
@@ -234,18 +243,20 @@ export default function ComandaList() {
                     {c.status === 'Aberta' ? <Clock size={11} /> : <CheckCircle2 size={11} />}
                     {c.status === 'Aberta' ? 'Na rua' : 'Fechada'}
                   </span>
-                  <div className="comanda-total">
-                    {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {c.status === 'Aberta' ? 'Subtotal bruto' : 'Valor líquido'}
+                  {!isOperator && (
+                    <div className="comanda-total">
+                      {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {c.status === 'Aberta' ? 'Subtotal bruto' : 'Valor líquido'}
+                      </div>
                     </div>
-                  </div>
-                  {c.status === 'Fechada' && (
+                  )}
+                  {!isOperator && c.status === 'Fechada' && (
                     <div className={`comanda-saldo ${saldo > 0.01 ? 'saldo-devedor' : 'saldo-ok'}`}>
                       {saldo > 0.01 ? `Saldo: ${saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '✓ Quitada'}
                     </div>
                   )}
-                  {c.status === 'Fechada' ? (
+                  {!isOperator && c.status === 'Fechada' && !isVendor ? (
                     <button
                       className="btn-reopen-list"
                       onClick={e => handleReopen(e, c.id)}

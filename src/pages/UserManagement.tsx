@@ -58,7 +58,7 @@ export default function UserManagement() {
         p_password: formPassword,
         p_role: formRole,
         p_name: formName,
-        p_cpf: formRole === 'VENDEDOR' ? formCpf : null,
+        p_cpf: formRole === 'VENDEDOR' ? formCpf.replace(/\D/g, '') : null,
         p_vendor_id: formRole === 'VENDEDOR' ? formVendorId : null
       });
 

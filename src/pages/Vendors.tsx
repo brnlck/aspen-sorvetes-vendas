@@ -117,7 +117,7 @@ export default function Vendors() {
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
-    const payload = { ...form, photo: form.photo || undefined };
+    const payload = { ...form, cpf: form.cpf.replace(/\D/g, ''), photo: form.photo || undefined };
     if (editingId) {
       await db.updateVendor(editingId, payload);
     } else {

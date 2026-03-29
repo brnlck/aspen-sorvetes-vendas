@@ -158,11 +158,6 @@ class DBService {
     if (comandaData.discount !== undefined) cPayload.discount = comandaData.discount;
     if ('closedAt' in comandaData) cPayload.closed_at = comandaData.closedAt;
 
-    if (Object.keys(cPayload).length > 0) {
-      const { error } = await supabase.from('comandas').update(cPayload).eq('id', id);
-      if (error) throw error;
-    }
-
     // Rewrite items if provided
     if (comandaData.items) {
       await supabase.from('comanda_items').delete().eq('comanda_id', id);
@@ -189,6 +184,11 @@ class DBService {
          }));
          await supabase.from('payments').insert(payPayload);
        }
+    }
+
+    if (Object.keys(cPayload).length > 0) {
+      const { error } = await supabase.from('comandas').update(cPayload).eq('id', id);
+      if (error) throw error;
     }
 
     return this.getComandaById(id) as unknown as Comanda;

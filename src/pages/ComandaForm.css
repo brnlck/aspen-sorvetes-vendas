@@ -46,6 +46,17 @@
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
 }
 
+.btn-close-comanda--blocked {
+  background: linear-gradient(135deg, var(--warning), #d97706);
+  opacity: 0.9;
+  box-shadow: none;
+}
+
+.btn-close-comanda--blocked:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .save-feedback {
   display: flex;
   align-items: center;

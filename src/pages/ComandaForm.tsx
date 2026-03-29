@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { VendorAvatar } from './Vendors';
+import { useAuth } from '../contexts/AuthContext';
 import './ComandaForm.css';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
@@ -24,6 +25,10 @@ export default function ComandaForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = !id;
+
+  const { profile } = useAuth();
+  const isOperator = profile?.role === 'OPERADOR';
+  const isVendor = profile?.role === 'VENDEDOR';
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -318,12 +323,12 @@ export default function ComandaForm() {
           </div>
         </div>
         <div className="form-actions">
-          {isClosed && !isNew && (
+          {isClosed && !isNew && !isVendor && (
             <button className="btn-reopen" onClick={() => setShowReopenConfirm(true)}>
               <Unlock size={18} /> Reabrir Comanda
             </button>
           )}
-          {!isClosed && (
+          {!isClosed && !isVendor && (
             <>
               <button
                 className={`btn-secondary ${saving ? 'btn--loading' : ''}`}
@@ -332,10 +337,16 @@ export default function ComandaForm() {
               >
                 <Save size={18} /> {saving ? 'Salvando...' : 'Salvar'}
               </button>
-              {!isNew && (
+              {!isNew && !isOperator && (
                 <button
-                  className="btn-close-comanda"
-                  onClick={() => setShowCloseConfirm(true)}
+                  className={`btn-close-comanda ${calcs.saldoDevedor > 0.005 ? 'btn-close-comanda--blocked' : ''}`}
+                  onClick={() => {
+                    if (calcs.saldoDevedor > 0.005) {
+                      alert('Não é possível fechar a comanda: Existe um saldo devedor pendente. Por favor, registre o pagamento total.');
+                    } else {
+                      setShowCloseConfirm(true);
+                    }
+                  }}
                   disabled={saving}
                 >
                   <Lock size={18} /> Fechar Comanda
@@ -416,7 +427,7 @@ export default function ComandaForm() {
                     </p>
                   </div>
                 </div>
-                {!isClosed && availableProducts.length > 0 && (
+                {!isClosed && !isVendor && availableProducts.length > 0 && (
                   <div className="add-product-dropdown">
                     <select
                       onChange={e => {
@@ -446,7 +457,7 @@ export default function ComandaForm() {
                     <thead>
                       <tr>
                         <th className="col-product">Produto</th>
-                        <th className="col-price">Preço Fábrica</th>
+                        {!isOperator && <th className="col-price">Preço Fábrica</th>}
                         <th className="col-qty">Saída Inicial</th>
                         <th className="col-qty col-reposition">Reposição</th>
                         <th className="col-qty col-total">Carga Total</th>
@@ -466,27 +477,37 @@ export default function ComandaForm() {
                                 {name}
                               </div>
                             </td>
-                            <td className="price-col">{formatCurrency(item.priceFactoryFrozen)}</td>
+                            {!isOperator && <td className="price-col">{formatCurrency(item.priceFactoryFrozen)}</td>}
                             <td>
-                              <input
-                                type="number" min={0}
-                                value={item.quantityOut === 0 ? '' : item.quantityOut}
-                                placeholder="0"
-                                className="qty-input"
-                                disabled={isClosed}
-                                onChange={e => updateItem(item.id, 'quantityOut', parseInt(e.target.value, 10) || 0)}
-                              />
+                              {isVendor ? (
+                                <span className="qty-display col-align-center">{item.quantityOut}</span>
+                              ) : (
+                                <input
+                                  type="number" min={0}
+                                  value={item.quantityOut === 0 ? '' : item.quantityOut}
+                                  placeholder="0"
+                                  className="qty-input"
+                                  disabled={isClosed}
+                                  onChange={e => updateItem(item.id, 'quantityOut', parseInt(e.target.value, 10) || 0)}
+                                />
+                              )}
                             </td>
                             <td>
-                              <input
-                                type="number" min={0}
-                                value={repDraft}
-                                placeholder="0"
-                                className="qty-input qty-input--reposition"
-                                disabled={isClosed}
-                                onChange={e => setRepositionDraft(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                onBlur={() => commitReposition(item.id)}
-                              />
+                              {isVendor ? (
+                                <span className="qty-display col-align-center reposition-col">
+                                  {item.quantityReposition > 0 ? `+${item.quantityReposition}` : '—'}
+                                </span>
+                              ) : (
+                                <input
+                                  type="number" min={0}
+                                  value={repDraft}
+                                  placeholder="0"
+                                  className="qty-input qty-input--reposition"
+                                  disabled={isClosed}
+                                  onChange={e => setRepositionDraft(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                  onBlur={() => commitReposition(item.id)}
+                                />
+                              )}
                             </td>
                             <td>
                               <span className={`carga-total-badge ${cargaTotal > 0 ? 'carga-positive' : 'carga-zero'}`}>
@@ -494,7 +515,7 @@ export default function ComandaForm() {
                               </span>
                             </td>
                             <td>
-                              {!isClosed && (
+                              {!isClosed && !isVendor && (
                                 <button
                                   className="btn-icon-danger"
                                   onClick={() => removeItem(item.id)}
@@ -560,8 +581,8 @@ export default function ComandaForm() {
                         <th className="col-qty col-align-center col-total">Carga Total</th>
                         <th className="col-qty col-align-center">Retorno</th>
                         <th className="col-qty col-align-center">Vendidos</th>
-                        <th className="col-price">Subtotal</th>
-                        <th className="col-price">Lucro</th>
+                        {!isOperator && <th className="col-price">Subtotal</th>}
+                        {!isOperator && <th className="col-price">Lucro</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -584,22 +605,26 @@ export default function ComandaForm() {
                             <strong>{item.cargaTotal}</strong>
                           </td>
                           <td className="col-align-center">
-                            <input
-                              type="number" min={0} max={item.cargaTotal}
-                              value={item.quantityReturn === 0 ? '' : item.quantityReturn}
-                              placeholder="0"
-                              className="qty-input"
-                              disabled={isClosed}
-                              onChange={e => updateItem(item.id, 'quantityReturn', parseInt(e.target.value, 10) || 0)}
-                            />
+                            {isVendor ? (
+                              <span className="qty-display col-align-center">{item.quantityReturn}</span>
+                            ) : (
+                              <input
+                                type="number" min={0} max={item.cargaTotal}
+                                value={item.quantityReturn === 0 ? '' : item.quantityReturn}
+                                placeholder="0"
+                                className="qty-input"
+                                disabled={isClosed}
+                                onChange={e => updateItem(item.id, 'quantityReturn', parseInt(e.target.value, 10) || 0)}
+                              />
+                            )}
                           </td>
                           <td className="col-align-center">
                             <span className={`vendidos-badge ${item.vendidos > 0 ? 'vendidos-positive' : 'vendidos-zero'}`}>
                               {item.vendidos}
                             </span>
                           </td>
-                          <td className="price-col">{formatCurrency(item.subtotalAspen)}</td>
-                          <td className="profit-col">{formatCurrency(item.lucroVendedor)}</td>
+                          {!isOperator && <td className="price-col">{formatCurrency(item.subtotalAspen)}</td>}
+                          {!isOperator && <td className="profit-col">{formatCurrency(item.lucroVendedor)}</td>}
                         </tr>
                       ))}
                     </tbody>
@@ -607,8 +632,8 @@ export default function ComandaForm() {
                       <tr className="totals-row">
                         <td colSpan={5}><strong>TOTAIS</strong></td>
                         <td className="col-align-center"><strong>{calcs.totalQtdVendidos}</strong></td>
-                        <td><strong>{formatCurrency(calcs.totalSubtotalAspen)}</strong></td>
-                        <td className="profit-col"><strong>{formatCurrency(calcs.totalProfit)}</strong></td>
+                        {!isOperator && <td><strong>{formatCurrency(calcs.totalSubtotalAspen)}</strong></td>}
+                        {!isOperator && <td className="profit-col"><strong>{formatCurrency(calcs.totalProfit)}</strong></td>}
                       </tr>
                     </tfoot>
                   </table>
@@ -617,7 +642,9 @@ export default function ComandaForm() {
 
               {/* ── Financial panel ── */}
               <div className="settlement-right">
-                {/* Discount */}
+                {!isOperator && (
+                  <>
+                    {/* Discount */}
                 <div className="glass-panel">
                   <div className="settlement-section-title">
                     <Calculator size={18} /> Fechamento Financeiro
@@ -630,14 +657,20 @@ export default function ComandaForm() {
                     <div className="financial-row discount-row">
                       <label>Desconto</label>
                       <div className="discount-input-wrap">
-                        <span className="discount-symbol">R$</span>
-                        <input
-                          type="number" min={0} step="0.01" placeholder="0,00"
-                          value={discount || ''}
-                          disabled={isClosed}
-                          onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-                          className="discount-input"
-                        />
+                        {isVendor ? (
+                          <span className="discount-display" style={{ padding: '0 8px', fontWeight: 600 }}>{formatCurrency(discount || 0)}</span>
+                        ) : (
+                          <>
+                            <span className="discount-symbol">R$</span>
+                            <input
+                              type="number" min={0} step="0.01" placeholder="0,00"
+                              value={discount || ''}
+                              disabled={isClosed}
+                              onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+                              className="discount-input"
+                            />
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="financial-row total-row">
@@ -653,7 +686,7 @@ export default function ComandaForm() {
                     <DollarSign size={18} /> Pagamentos
                   </div>
 
-                  {!isClosed && (
+                  {!isClosed && !isVendor && (
                     <div className="add-payment-form">
                       <div className="payment-method-btns">
                         {PAYMENT_METHODS.map(m => (
@@ -693,7 +726,7 @@ export default function ComandaForm() {
                             {p.method}
                           </div>
                           <div className="payment-amount">{formatCurrency(p.amount)}</div>
-                          {!isClosed && (
+                          {!isClosed && !isVendor && (
                             <button className="btn-icon-danger" onClick={() => removePayment(p.id)}>
                               <Trash2 size={14} />
                             </button>
@@ -736,6 +769,7 @@ export default function ComandaForm() {
                     </div>
                   </div>
                 </div>
+                </>)}
               </div>
             </div>
           )}

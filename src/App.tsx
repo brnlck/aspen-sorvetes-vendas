@@ -9,6 +9,7 @@ import Reports from './pages/Reports';
 import MapaMovimentacao from './pages/MapaMovimentacao';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
+import MeuDesempenho from './pages/MeuDesempenho';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
@@ -22,7 +23,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   if (allowedRoles && !allowedRoles.includes(profile.role)) {
     // If not allowed, redirect to a safe page based on role
     if (profile.role === 'OPERADOR') return <Navigate to="/comandas" replace />;
-    if (profile.role === 'VENDEDOR') return <Navigate to="/comandas" replace />;
+    if (profile.role === 'VENDEDOR') return <Navigate to="/desempenho" replace />;
     return <Navigate to="/" replace />;
   }
 
@@ -95,7 +96,13 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="*" element={<Navigate to={profile.role === 'ADMIN' ? '/' : '/comandas'} replace />} />
+        <Route path="/desempenho" element={
+          <ProtectedRoute allowedRoles={['VENDEDOR']}>
+            <MeuDesempenho />
+          </ProtectedRoute>
+        } />
+
+        <Route path="*" element={<Navigate to={profile.role === 'ADMIN' ? '/' : (profile.role === 'VENDEDOR' ? '/desempenho' : '/comandas')} replace />} />
       </Routes>
     </Layout>
   );

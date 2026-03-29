@@ -21,6 +21,7 @@ export default function Layout({ children }: LayoutProps) {
     ...(isAdmin ? [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }] : []),
     ...(isAdmin ? [{ to: '/vendors', label: 'Vendedores', icon: Users }] : []),
     ...(isAdmin ? [{ to: '/products', label: 'Produtos', icon: Package }] : []),
+    ...(profile?.role === 'VENDEDOR' ? [{ to: '/desempenho', label: 'Meu Desempenho', icon: FileBarChart2 }] : []),
     { to: '/comandas', label: 'Vendas', icon: ClipboardList }, // Everyone has Vendas
     ...(isAdmin ? [{ to: '/reports', label: 'Relatórios', icon: FileBarChart2 }] : []),
     ...(isAdmin ? [{ to: '/mapa', label: 'Mapa Diário', icon: TableProperties }] : []),
