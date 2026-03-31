@@ -644,132 +644,129 @@ export default function ComandaForm() {
               <div className="settlement-right">
                 {!isOperator && (
                   <>
-                    {/* Discount */}
-                <div className="glass-panel">
-                  <div className="settlement-section-title">
-                    <Calculator size={18} /> Fechamento Financeiro
-                  </div>
-                  <div className="financial-rows">
-                    <div className="financial-row">
-                      <span>Subtotal Fábrica</span>
-                      <span>{formatCurrency(calcs.totalSubtotalAspen)}</span>
-                    </div>
-                    <div className="financial-row discount-row">
-                      <label>Desconto</label>
-                      <div className="discount-input-wrap">
-                        {isVendor ? (
-                          <span className="discount-display" style={{ padding: '0 8px', fontWeight: 600 }}>{formatCurrency(discount || 0)}</span>
-                        ) : (
-                          <>
-                            <span className="discount-symbol">R$</span>
-                            <input
-                              type="number" min={0} step="0.01" placeholder="0,00"
-                              value={discount || ''}
-                              disabled={isClosed}
-                              onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-                              className="discount-input"
-                            />
-                          </>
-                        )}
+                    <div className="glass-panel">
+                      <div className="settlement-section-title">
+                        <Calculator size={18} /> Acerto Financeiro
                       </div>
-                    </div>
-                    <div className="financial-row total-row">
-                      <span>Total c/ Desconto</span>
-                      <span>{formatCurrency(calcs.totalWithDiscount)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payments */}
-                <div className="glass-panel">
-                  <div className="settlement-section-title">
-                    <DollarSign size={18} /> Pagamentos
-                  </div>
-
-                  {!isClosed && !isVendor && (
-                    <div className="add-payment-form">
-                      <div className="payment-method-btns">
-                        {PAYMENT_METHODS.map(m => (
-                          <button
-                            key={m.value}
-                            className={`pay-method-btn ${newPayMethod === m.value ? 'pay-method-btn--active' : ''}`}
-                            onClick={() => setNewPayMethod(m.value)}
-                          >
-                            {m.icon} {m.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="add-payment-row">
-                        <div className="discount-input-wrap">
-                          <span className="discount-symbol">R$</span>
-                          <input
-                            type="number" min={0} step="0.01" placeholder="Valor"
-                            value={newPayAmount}
-                            onChange={e => setNewPayAmount(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && addPayment()}
-                            className="discount-input"
-                          />
+                      
+                      <div className="financial-rows" style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color, rgba(0,0,0,0.05))' }}>
+                        <div className="financial-row">
+                          <span>Subtotal de Fábrica</span>
+                          <span>{formatCurrency(calcs.totalSubtotalAspen)}</span>
                         </div>
-                        <button className="btn-primary btn-add-pay" onClick={addPayment}>
-                          <Plus size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {payments.length > 0 ? (
-                    <div className="payment-list">
-                      {payments.map(p => (
-                        <div key={p.id} className="payment-item">
-                          <div className="payment-method-tag">
-                            {PAYMENT_METHODS.find(m => m.value === p.method)?.icon}
-                            {p.method}
+                        <div className="financial-row discount-row">
+                          <label>Desconto Aplicado</label>
+                          <div className="discount-input-wrap">
+                            {isVendor ? (
+                              <span className="discount-display" style={{ padding: '0 8px', fontWeight: 600 }}>{formatCurrency(discount || 0)}</span>
+                            ) : (
+                              <>
+                                <span className="discount-symbol">R$</span>
+                                <input
+                                  type="number" min={0} step="0.01" placeholder="0,00"
+                                  value={discount || ''}
+                                  disabled={isClosed}
+                                  onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+                                  className="discount-input"
+                                />
+                              </>
+                            )}
                           </div>
-                          <div className="payment-amount">{formatCurrency(p.amount)}</div>
-                          {!isClosed && !isVendor && (
-                            <button className="btn-icon-danger" onClick={() => removePayment(p.id)}>
-                              <Trash2 size={14} />
-                            </button>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="payments-empty">Nenhum pagamento registrado</p>
-                  )}
+                        <div className="financial-row total-row">
+                          <span>Valor Total a Pagar</span>
+                          <span>{formatCurrency(calcs.totalWithDiscount)}</span>
+                        </div>
+                      </div>
 
-                  <div className="payment-total-row">
-                    <span>Total Pago</span>
-                    <strong>{formatCurrency(calcs.totalPaid)}</strong>
-                  </div>
-                </div>
+                      <div className="settlement-section-title" style={{ marginTop: 0 }}>
+                        <DollarSign size={18} /> Pagamentos
+                      </div>
 
-                {/* Saldo */}
-                <div className={`saldo-card ${calcs.saldoDevedor > 0.005 ? 'saldo-card--debt' : 'saldo-card--ok'}`}>
-                  {calcs.saldoDevedor > 0.005 ? <AlertCircle size={24} /> : <CheckCircle size={24} />}
-                  <div>
-                    <div className="saldo-label">Saldo Devedor</div>
-                    <div className="saldo-value">{formatCurrency(Math.max(0, calcs.saldoDevedor))}</div>
-                  </div>
-                </div>
+                      {!isClosed && !isVendor && (
+                        <div className="add-payment-form">
+                          <div className="payment-method-btns">
+                            {PAYMENT_METHODS.map(m => (
+                              <button
+                                key={m.value}
+                                className={`pay-method-btn ${newPayMethod === m.value ? 'pay-method-btn--active' : ''}`}
+                                onClick={() => setNewPayMethod(m.value)}
+                              >
+                                {m.icon} {m.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="add-payment-row">
+                            <div className="discount-input-wrap">
+                              <span className="discount-symbol">R$</span>
+                              <input
+                                type="number" min={0} step="0.01" placeholder="Valor"
+                                value={newPayAmount}
+                                onChange={e => setNewPayAmount(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addPayment()}
+                                className="discount-input"
+                              />
+                            </div>
+                            <button className="btn-primary btn-add-pay" onClick={addPayment}>
+                              <Plus size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                {/* Vendor summary */}
-                <div className="glass-panel vendor-profit-card">
-                  <div className="settlement-section-title">
-                    <TrendingUp size={18} /> Resumo do Vendedor
-                  </div>
-                  <div className="financial-rows">
-                    <div className="financial-row">
-                      <span>Picolés vendidos</span>
-                      <span>{calcs.totalQtdVendidos} un</span>
+                      {payments.length > 0 ? (
+                        <div className="payment-list">
+                          {payments.map(p => (
+                            <div key={p.id} className="payment-item">
+                              <div className="payment-method-tag">
+                                {PAYMENT_METHODS.find(m => m.value === p.method)?.icon}
+                                {p.method}
+                              </div>
+                              <div className="payment-amount">{formatCurrency(p.amount)}</div>
+                              {!isClosed && !isVendor && (
+                                <button className="btn-icon-danger" onClick={() => removePayment(p.id)}>
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="payments-empty">Nenhum pagamento registrado</p>
+                      )}
+
+                      <div className="payment-total-row">
+                        <span>Total Pago</span>
+                        <strong>{formatCurrency(calcs.totalPaid)}</strong>
+                      </div>
                     </div>
-                    <div className="financial-row profit-highlight">
-                      <span>Lucro do vendedor</span>
-                      <strong className="profit-value">{formatCurrency(calcs.totalProfit)}</strong>
+
+                    {/* Saldo */}
+                    <div className={`saldo-card ${calcs.saldoDevedor > 0.005 ? 'saldo-card--debt' : 'saldo-card--ok'}`}>
+                      {calcs.saldoDevedor > 0.005 ? <AlertCircle size={24} /> : <CheckCircle size={24} />}
+                      <div>
+                        <div className="saldo-label">Saldo Devedor</div>
+                        <div className="saldo-value">{formatCurrency(Math.max(0, calcs.saldoDevedor))}</div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                </>)}
+
+                    {/* Vendor summary */}
+                    <div className="glass-panel vendor-profit-card">
+                      <div className="settlement-section-title">
+                        <TrendingUp size={18} /> Resumo do Vendedor
+                      </div>
+                      <div className="financial-rows">
+                        <div className="financial-row">
+                          <span>Picolés vendidos</span>
+                          <span>{calcs.totalQtdVendidos} un</span>
+                        </div>
+                        <div className="financial-row profit-highlight">
+                          <span>Lucro do vendedor</span>
+                          <strong className="profit-value">{formatCurrency(calcs.totalProfit)}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </>)}
               </div>
             </div>
           )}

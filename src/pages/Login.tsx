@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IceCreamCone, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import './Login.css';
 
@@ -54,10 +54,8 @@ export default function Login() {
 
       <div className="login-card animate-fade-in">
         {/* Logo */}
-        <div className="login-logo">
-          <div className="login-logo-icon">
-            <IceCreamCone size={36} />
-          </div>
+        <div className="login-header">
+          <img src="/logo-aspen.png" alt="Aspen Sorvetes Logo" className="login-logo" />
           <h1 className="login-title">Aspen Sorvetes - Vendas Carrinhos</h1>
           <p className="login-subtitle">Vendas Carrinhos</p>
         </div>

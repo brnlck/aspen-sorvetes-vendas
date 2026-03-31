@@ -37,22 +37,16 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.sidebar-logo {
+.sidebar-brand {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.sidebar-logo-icon {
-  width: 42px;
-  height: 42px;
-  background: linear-gradient(135deg, var(--accent-primary), #6d28d9);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  box-shadow: 0 4px 12px var(--accent-glow);
+.sidebar-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .sidebar-logo-title {

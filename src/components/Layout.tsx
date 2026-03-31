@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Package, ClipboardList,
-  FileBarChart2, LogOut, IceCreamCone, Menu, X, TableProperties, ShieldCheck
+  FileBarChart2, LogOut, Menu, X, TableProperties, ShieldCheck
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,10 +38,8 @@ export default function Layout({ children }: LayoutProps) {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <div className="sidebar-logo-icon">
-              <IceCreamCone size={22} />
-            </div>
+          <div className="sidebar-brand">
+            <img src="/logo-aspen.png" alt="Logo" className="sidebar-logo" />
             <div>
               <div className="sidebar-logo-title">Aspen Sorvetes</div>
               <div className="sidebar-logo-sub">Vendas Carrinhos</div>

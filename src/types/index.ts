@@ -15,6 +15,7 @@ export type Product = {
   priceFactory: number;
   profitVendor: number;
   status: 'Ativo' | 'Inativo';
+  sortOrder?: number;
 };
 
 export type ComandaItem = {

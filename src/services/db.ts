@@ -3,13 +3,13 @@ import type { Vendor, Product, Comanda } from '../types';
 import { supabase } from './supabase';
 
 export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
-  { name: 'Base Leite', priceFactory: 2.50, profitVendor: 1.50, status: 'Ativo' },
-  { name: 'Base Água', priceFactory: 2.30, profitVendor: 1.20, status: 'Ativo' },
-  { name: 'Skimo', priceFactory: 4.30, profitVendor: 1.70, status: 'Ativo' },
-  { name: 'Premium', priceFactory: 5.30, profitVendor: 2.70, status: 'Ativo' },
-  { name: 'Sorvete', priceFactory: 5.00, profitVendor: 2.50, status: 'Ativo' },
-  { name: 'Sorvete Premium', priceFactory: 5.50, profitVendor: 2.50, status: 'Ativo' },
-  { name: 'Mini Paleta', priceFactory: 5.30, profitVendor: 2.70, status: 'Ativo' },
+  { name: 'Base Leite', priceFactory: 2.50, profitVendor: 1.50, status: 'Ativo', sortOrder: 1 },
+  { name: 'Base Água', priceFactory: 2.30, profitVendor: 1.20, status: 'Ativo', sortOrder: 2 },
+  { name: 'Skimo', priceFactory: 4.30, profitVendor: 1.70, status: 'Ativo', sortOrder: 3 },
+  { name: 'Premium', priceFactory: 5.30, profitVendor: 2.70, status: 'Ativo', sortOrder: 4 },
+  { name: 'Sorvete', priceFactory: 5.00, profitVendor: 2.50, status: 'Ativo', sortOrder: 5 },
+  { name: 'Sorvete Premium', priceFactory: 5.50, profitVendor: 2.50, status: 'Ativo', sortOrder: 6 },
+  { name: 'Mini Paleta', priceFactory: 5.30, profitVendor: 2.70, status: 'Ativo', sortOrder: 7 },
 ];
 
 class DBService {
@@ -34,7 +34,7 @@ class DBService {
 
   // ---- PRODUCTS ----
   async getProducts(): Promise<Product[]> {
-    const { data, error } = await supabase.from('products').select('*').order('name');
+    const { data, error } = await supabase.from('products').select('*').order('sort_order', { ascending: true });
     if (error) throw error;
     
     if (!data || data.length === 0) {
@@ -82,7 +82,8 @@ class DBService {
       name: row.name,
       priceFactory: Number(row.price_factory),
       profitVendor: Number(row.profit_vendor),
-      status: row.status as 'Ativo'|'Inativo'
+      status: row.status as 'Ativo'|'Inativo',
+      sortOrder: row.sort_order ?? 99
     };
   }
 
