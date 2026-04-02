@@ -20,8 +20,8 @@
 }
 
 .role-badge.admin {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
 }
 
 .role-badge.operador {

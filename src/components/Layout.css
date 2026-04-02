@@ -5,11 +5,10 @@
   background: var(--bg-primary);
 }
 
-/* Sidebar */
 .sidebar {
   width: 260px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #0d1526 0%, #0f172a 100%);
+  background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -102,13 +101,13 @@
 }
 
 .nav-item--active {
-  background: linear-gradient(90deg, rgba(139,92,246,0.2), rgba(139,92,246,0.05));
+  background: rgba(0, 123, 255, 0.08); /* light blue accent */
   color: var(--accent-primary);
   border-left: 3px solid var(--accent-primary);
 }
 
 .nav-item--active svg {
-  filter: drop-shadow(0 0 6px var(--accent-primary));
+  color: var(--accent-primary);
 }
 
 .sidebar-footer {
@@ -147,7 +146,7 @@
   top: 0;
   z-index: 50;
   height: 64px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -184,7 +183,7 @@
 .topbar-user-avatar {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, var(--accent-primary), #6d28d9);
+  background: var(--accent-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;

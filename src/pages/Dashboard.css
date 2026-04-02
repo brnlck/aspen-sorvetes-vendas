@@ -82,9 +82,9 @@
   background: var(--kpi-color, var(--accent-primary));
 }
 
-.kpi-card--revenue { --kpi-color: #8b5cf6; background: linear-gradient(145deg, #1e0b3e22, #1e293b); }
-.kpi-card--qty     { --kpi-color: #06b6d4; background: linear-gradient(145deg, #0c2a3266, #1e293b); }
-.kpi-card--profit  { --kpi-color: #10b981; background: linear-gradient(145deg, #0a2e1e66, #1e293b); }
+.kpi-card--revenue { --kpi-color: #007bff; background: var(--bg-secondary); }
+.kpi-card--qty     { --kpi-color: #06b6d4; background: var(--bg-secondary); }
+.kpi-card--profit  { --kpi-color: #10b981; background: var(--bg-secondary); }
 
 .kpi-icon-wrap {
   width: 42px;
@@ -96,9 +96,9 @@
   margin-bottom: 0.5rem;
 }
 
-.kpi-icon-revenue { background: rgba(139,92,246,0.2); color: #8b5cf6; }
+.kpi-icon-revenue { background: rgba(0,123,255,0.1); color: #007bff; }
 .kpi-icon-qty     { background: rgba(6,182,212,0.2);  color: #06b6d4; }
-.kpi-icon-profit  { background: rgba(16,185,129,0.2); color: #10b981; }
+.kpi-icon-profit  { background: rgba(16,185,129,0.1); color: #10b981; }
 
 .kpi-label {
   font-size: 0.8rem;
@@ -270,13 +270,13 @@
   justify-content: space-between;
   padding: 0.75rem;
   border-radius: var(--radius-md);
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   transition: background 0.2s;
 }
 
 .recent-item:hover {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-primary);
 }
 
 .recent-vendor {
@@ -289,7 +289,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), #6d28d9);
+  background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;

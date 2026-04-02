@@ -48,6 +48,8 @@ export type Comanda = {
   payments: Payment[];
   createdAt: string;
   closedAt?: string;
+  lockedOut?: boolean;
+  lockedReposition?: boolean;
 };
 
 export type User = {

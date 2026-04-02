@@ -1,46 +1,39 @@
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '../services/db';
-import type { Comanda } from '../types';
-import { TrendingUp, Banknote, PackageOpen } from 'lucide-react';
-import { startOfMonth, startOfYear, isSameDay, isAfter } from 'date-fns';
+import type { Comanda, Product } from '../types';
+import { TrendingUp, Banknote, PackageOpen, Calendar, Package } from 'lucide-react';
+import { startOfMonth, endOfDay, isWithinInterval, parseISO, format } from 'date-fns';
 import './MeuDesempenho.css';
 
-type TimeFilter = 'hoje' | 'mes' | 'ano' | 'tudo';
-
 export default function MeuDesempenho() {
+  const today = new Date();
+  const [startDate, setStartDate] = useState(format(startOfMonth(today), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(today, 'yyyy-MM-dd'));
+
   const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('mes');
 
   useEffect(() => {
-    async function fetchComandas() {
-      // Devido ao RLS no Supabase, isso retornará APENAS as comandas do vendedor logado,
-      // pois `vendor_id` é filtrado na base de dados pelo seu `cpf`.
-      const data = await db.getComandas();
-      setComandas(data);
+    async function load() {
+      const [cData, pData] = await Promise.all([
+        db.getComandas(),
+        db.getProducts(),
+      ]);
+      setComandas(cData);
+      setAllProducts(pData);
       setLoading(false);
     }
-    fetchComandas();
+    load();
   }, []);
 
   const filtered = useMemo(() => {
-    const today = new Date();
     return comandas.filter(c => {
-      // Ignora as rascunhos em aberto, a menos que tenhamos produtos vendidos nelas que importem.
-      // O usual é contar o Realizado.
-      // Porém, podemos somar todas as movimentações.
-      // Aqui, o status de fechada garante que a comanda foi validada.
-      // E para comandas abertas, vamos contar apenas como previsão, mas a métrica oficial 
-      // de grana paga à fábrica a gente soma o valor dos "payments".
-      
-      const cDate = new Date(c.date + 'T12:00:00'); // Evita bug de timezone
-      
-      if (timeFilter === 'hoje') return isSameDay(cDate, today);
-      if (timeFilter === 'mes') return isAfter(cDate, startOfMonth(today)) || isSameDay(cDate, startOfMonth(today));
-      if (timeFilter === 'ano') return isAfter(cDate, startOfYear(today)) || isSameDay(cDate, startOfYear(today));
-      return true;
+      if (!c.date || c.date.length < 10) return false;
+      const cDate = parseISO(c.date);
+      return isWithinInterval(cDate, { start: parseISO(startDate), end: endOfDay(parseISO(endDate)) });
     });
-  }, [comandas, timeFilter]);
+  }, [comandas, startDate, endDate]);
 
   const stats = useMemo(() => {
     let unidades = 0;
@@ -71,6 +64,34 @@ export default function MeuDesempenho() {
     return { unidades, lucro, repasse };
   }, [filtered]);
 
+  const productStats = useMemo(() => {
+    const statsMap: Record<string, { id: string; name: string; qty: number; value: number }> = {};
+    
+    filtered.forEach(c => {
+      if (c.status !== 'Fechada') return; // considera vendas apenas em comandas fechadas
+      c.items.forEach(i => {
+        const cargaTotal = i.quantityOut + (i.quantityReposition ?? 0);
+        const sold = Math.max(0, cargaTotal - i.quantityReturn);
+        
+        if (sold > 0) {
+          if (!statsMap[i.productId]) {
+            const prod = allProducts.find(p => p.id === i.productId);
+            statsMap[i.productId] = {
+              id: i.productId,
+              name: prod?.name || 'Desconhecido',
+              qty: 0,
+              value: 0
+            };
+          }
+          statsMap[i.productId].qty += sold;
+          statsMap[i.productId].value += sold * i.profitVendorFrozen;
+        }
+      });
+    });
+
+    return Object.values(statsMap).sort((a,b) => b.qty - a.qty);
+  }, [filtered, allProducts]);
+
   const formatCurrency = (val: number) =>
     val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -86,31 +107,16 @@ export default function MeuDesempenho() {
         </p>
       </div>
 
-      <div className="desempenho-filters">
-        <button
-          className={`filter-btn ${timeFilter === 'hoje' ? 'filter-btn--active' : ''}`}
-          onClick={() => setTimeFilter('hoje')}
-        >
-          Hoje
-        </button>
-        <button
-          className={`filter-btn ${timeFilter === 'mes' ? 'filter-btn--active' : ''}`}
-          onClick={() => setTimeFilter('mes')}
-        >
-          Este Mês
-        </button>
-        <button
-          className={`filter-btn ${timeFilter === 'ano' ? 'filter-btn--active' : ''}`}
-          onClick={() => setTimeFilter('ano')}
-        >
-          Este Ano
-        </button>
-        <button
-          className={`filter-btn ${timeFilter === 'tudo' ? 'filter-btn--active' : ''}`}
-          onClick={() => setTimeFilter('tudo')}
-        >
-          Total Acumulado
-        </button>
+      <div className="glass-panel period-selector" style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '1rem 1.5rem', gap: '1rem' }}>
+        <div className="period-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: 'var(--text-color)' }}>
+          <Calendar size={18} />
+          Período de Análise
+        </div>
+        <div className="date-range-inputs" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>até</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+        </div>
       </div>
 
       <div className="desempenho-grid">
@@ -136,7 +142,7 @@ export default function MeuDesempenho() {
           <p className="metric-subtitle">Total de pagamentos entregues</p>
         </div>
 
-        <div className="metric-card profit">
+        <div className="metric-card profit" style={{ '--kpi-color': '#06b6d4' } as React.CSSProperties}>
           <div className="metric-header">
             <TrendingUp size={18} className="metric-icon" />
             Minha Comissão
@@ -146,6 +152,53 @@ export default function MeuDesempenho() {
           </div>
           <p className="metric-subtitle">Margem de lucro total recebida</p>
         </div>
+      </div>
+
+      <div className="glass-panel" style={{ marginTop: '0.5rem' }}>
+        <div className="report-table-header" style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Package size={18} /> Resumo de Produtos Vendidos
+        </div>
+        
+        {productStats.length === 0 ? (
+          <div className="empty-state" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Nenhuma venda concluída neste período.
+          </div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th style={{ textAlign: 'center' }}>Quantidade Vendida</th>
+                  <th style={{ textAlign: 'right' }}>Sua Comissão</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productStats.map(item => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="item-name" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
+                        <div style={{ color: 'var(--primary-color)' }}><PackageOpen size={15} /></div>
+                        {item.name}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <span className="vendidos-badge vendidos-positive" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', background: 'var(--success-bg)', color: 'var(--success)', padding: '0.35rem 0.85rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700 }}>
+                          <span>{item.qty}</span>
+                          <span style={{ fontWeight: 600, opacity: 0.8 }}>un</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {formatCurrency(item.value)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { db } from '../services/db';
 import type { Vendor, Comanda } from '../types';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, parseISO, startOfMonth, endOfDay, isWithinInterval, eachDayOfInterval } from 'date-fns';
 import {
   FileBarChart2, Calendar, TrendingUp, CheckSquare,
   DollarSign, IceCream2, Award
@@ -11,8 +10,8 @@ import './Reports.css';
 
 export default function Reports() {
   const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [startDate, setStartDate] = useState(format(startOfMonth(today), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(today, 'yyyy-MM-dd'));
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [allComandas, setAllComandas] = useState<Comanda[]>([]);
@@ -32,10 +31,7 @@ export default function Reports() {
     load();
   }, []);
 
-  const monthStart = startOfMonth(new Date(year, month - 1, 1));
-  const monthEnd = endOfMonth(new Date(year, month - 1, 1));
-
-  const periodLabel = format(new Date(year, month - 1, 1), "MMMM 'de' yyyy", { locale: ptBR });
+  const periodLabel = `${format(parseISO(startDate), 'dd/MM/yyyy')} a ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
 
   const report = useMemo(() => {
     // Filtra apenas comandas FECHADAS no período — mesmo critério do Mapa Diário
@@ -43,7 +39,7 @@ export default function Reports() {
       if (!c.date || c.date.length < 10) return false;
       try {
         return c.status === 'Fechada' &&
-          isWithinInterval(parseISO(c.date), { start: monthStart, end: monthEnd });
+          isWithinInterval(parseISO(c.date), { start: parseISO(startDate), end: endOfDay(parseISO(endDate)) });
       } catch { return false; }
     });
 
@@ -55,14 +51,21 @@ export default function Reports() {
       let totalDiscount     = 0;
       let totalProfit       = 0;
       let totalQty          = 0;
+      let totalCarga        = 0;
+      let totalReturnQty    = 0;
 
       vendorComandas.forEach(c => {
         // Acumula desconto da comanda
         totalDiscount += c.discount ?? 0;
 
         c.items.forEach(item => {
-          // Quantidade vendida = Saída Inicial + Reposição − Retorno (igual ao Mapa Diário)
-          const qty = Math.max(0, (item.quantityOut + (item.quantityReposition ?? 0)) - item.quantityReturn);
+          const carga = item.quantityOut + (item.quantityReposition ?? 0);
+          const ret = item.quantityReturn || 0;
+          totalCarga += carga;
+          totalReturnQty += ret;
+
+          // Quantidade vendida = Carga Total − Retorno
+          const qty = Math.max(0, carga - ret);
           totalFactoryGross += qty * item.priceFactoryFrozen;
           totalProfit       += qty * item.profitVendorFrozen;
           totalQty          += qty;
@@ -78,42 +81,39 @@ export default function Reports() {
         totalSold,
         totalProfit,
         totalQty,
+        totalCarga,
+        totalReturnQty,
+        totalDiscount,
         comandas: vendorComandas,
       };
     }).filter(r => r.vendor.status === 'Ativo' || r.workedDays > 0)
       .sort((a, b) => b.totalProfit - a.totalProfit);
-  }, [vendors, allComandas, monthStart, monthEnd]);
+  }, [vendors, allComandas, startDate, endDate]);
 
   const totals = useMemo(() => {
+    const uniqueDates = new Set(report.flatMap(r => r.comandas.map(c => c.date))).size;
     return report.reduce((acc, r) => ({
-      days: acc.days + r.workedDays,
+      days: acc.days,
       sold: acc.sold + r.totalSold,
       profit: acc.profit + r.totalProfit,
       qty: acc.qty + r.totalQty,
-    }), { days: 0, sold: 0, profit: 0, qty: 0 });
+      discount: acc.discount + r.totalDiscount,
+    }), { days: uniqueDates, sold: 0, profit: 0, qty: 0, discount: 0 });
   }, [report]);
 
   const formatCurrency = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  const months = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
-
-  const currentYear = today.getFullYear();
-  const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
-
   // Generate daily frequency for a vendor
   const getDailyData = (vendorId: string) => {
-    const daysInMonth = endOfMonth(new Date(year, month - 1, 1)).getDate();
-    const days: { day: number; worked: boolean }[] = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const worked = allComandas.some(c => c.vendorId === vendorId && c.date === dateStr);
-      days.push({ day: d, worked });
-    }
-    return days;
+    try {
+      const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
+      return days.map(d => {
+        const dateStr = format(d, 'yyyy-MM-dd');
+        const worked = allComandas.some(c => c.vendorId === vendorId && c.date === dateStr);
+        return { date: d, worked };
+      });
+    } catch { return []; }
   };
 
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
@@ -136,41 +136,50 @@ export default function Reports() {
           <span>Período de análise:</span>
           <strong>{periodLabel}</strong>
         </div>
-        <div className="period-inputs">
-          <select value={month} onChange={e => setMonth(Number(e.target.value))}>
-            {months.map((m, i) => (
-              <option key={i + 1} value={i + 1}>{m}</option>
-            ))}
-          </select>
-          <select value={year} onChange={e => setYear(Number(e.target.value))}>
-            {years.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
+        <div className="period-inputs date-range-inputs">
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <span style={{ color: 'var(--text-muted)' }}>até</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
         </div>
       </div>
 
       {/* Summary KPIs */}
-      <div className="grid-4 report-kpis">
+      <div className="report-kpis">
         <div className="kpi-card kpi-card--revenue">
           <div className="kpi-icon-wrap kpi-icon-revenue"><DollarSign size={20} /></div>
           <div className="kpi-label">Total Faturado</div>
-          <div className="kpi-value" style={{ fontSize: '1.4rem' }}>{formatCurrency(totals.sold)}</div>
+          <div className="kpi-value">{formatCurrency(totals.sold)}</div>
         </div>
         <div className="kpi-card kpi-card--qty">
           <div className="kpi-icon-wrap kpi-icon-qty"><IceCream2 size={20} /></div>
           <div className="kpi-label">Picolés Vendidos</div>
-          <div className="kpi-value" style={{ fontSize: '1.4rem' }}>{totals.qty.toLocaleString('pt-BR')}</div>
+          <div className="kpi-value">{totals.qty.toLocaleString('pt-BR')}</div>
+        </div>
+        <div className="kpi-card" style={{ '--kpi-color': '#f43f5e' } as React.CSSProperties}>
+          <div className="kpi-icon-wrap" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e' }}>
+            <DollarSign size={20} />
+          </div>
+          <div className="kpi-label">Total Descontos</div>
+          <div className="kpi-value">{formatCurrency(totals.discount)}</div>
         </div>
         <div className="kpi-card kpi-card--profit">
           <div className="kpi-icon-wrap kpi-icon-profit"><TrendingUp size={20} /></div>
           <div className="kpi-label">Lucro Vendedores</div>
-          <div className="kpi-value" style={{ fontSize: '1.4rem' }}>{formatCurrency(totals.profit)}</div>
+          <div className="kpi-value">{formatCurrency(totals.profit)}</div>
         </div>
         <div className="kpi-card" style={{ '--kpi-color': '#06b6d4' } as React.CSSProperties}>
           <div className="kpi-icon-wrap" style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>
             <CheckSquare size={20} />
           </div>
           <div className="kpi-label">Total Dias Trabalhados</div>
-          <div className="kpi-value" style={{ fontSize: '1.4rem' }}>{totals.days}</div>
+          <div className="kpi-value">{totals.days}</div>
+        </div>
+        <div className="kpi-card" style={{ '--kpi-color': '#64748b' } as React.CSSProperties}>
+          <div className="kpi-icon-wrap" style={{ background: 'rgba(100, 116, 139, 0.15)', color: '#64748b' }}>
+            <TrendingUp size={20} />
+          </div>
+          <div className="kpi-label">Média Faturamento Diário</div>
+          <div className="kpi-value">{formatCurrency(totals.days > 0 ? totals.sold / totals.days : 0)}</div>
         </div>
       </div>
 
@@ -194,11 +203,12 @@ export default function Reports() {
                 <tr>
                   <th>#</th>
                   <th>Vendedor</th>
-                  <th>Dias Trabalhados</th>
-                  <th>Qtd. Vendidos</th>
-                  <th>Faturamento (Fábrica)</th>
-                  <th>Lucro do Vendedor</th>
-                  <th>Frequência</th>
+                  <th style={{ textAlign: 'center' }}>Dias Trabalhados</th>
+                  <th style={{ textAlign: 'center' }}>Qtd. Vendidos</th>
+                  <th style={{ textAlign: 'right' }}>Faturamento (Fábrica)</th>
+                  <th style={{ textAlign: 'right', color: 'var(--text-muted)' }}>Desc.</th>
+                  <th style={{ textAlign: 'right' }}>Lucro do Vendedor</th>
+                  <th style={{ textAlign: 'center' }}>Frequência</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,23 +237,34 @@ export default function Reports() {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <div className="days-badge">
                             <Calendar size={14} />
                             {r.workedDays} dia{r.workedDays !== 1 ? 's' : ''}
                           </div>
                         </td>
-                        <td>
-                          <div className="cell-with-icon">
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="cell-with-icon" style={{ justifyContent: 'center', fontWeight: 700, color: '#1A202C' }}>
                             <IceCream2 size={14} className="cell-icon" />
                             {r.totalQty} un
                           </div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: 400 }}>
+                            Média: {r.workedDays > 0 ? (r.totalQty / r.workedDays).toFixed(1) : 0} un/dia
+                          </div>
                         </td>
-                        <td className="price-col">{formatCurrency(r.totalSold)}</td>
-                        <td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="price-col" style={{ fontWeight: 700, color: '#1A202C' }}>{formatCurrency(r.totalSold)}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: 400 }}>
+                            Média: {formatCurrency(r.workedDays > 0 ? r.totalSold / r.workedDays : 0)}/dia
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                          <span style={{ fontSize: '0.85rem' }}>{r.totalDiscount > 0 ? formatCurrency(r.totalDiscount) : '-'}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
                           <span className="profit-chip">{formatCurrency(r.totalProfit)}</span>
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <button
                             className="btn-secondary btn-sm"
                             onClick={() => setExpandedVendor(isExpanded ? null : r.vendor.id)}
@@ -254,15 +275,15 @@ export default function Reports() {
                       </tr>
                       {isExpanded && (
                         <tr key={`${r.vendor.id}-expanded`} className="expanded-row">
-                          <td colSpan={7}>
+                          <td colSpan={8}>
                             <div className="calendar-grid">
-                              {dailyData.map(({ day, worked }) => (
+                              {dailyData.map(({ date, worked }) => (
                                 <div
-                                  key={day}
+                                  key={date.toISOString()}
                                   className={`calendar-day ${worked ? 'calendar-day--worked' : 'calendar-day--off'}`}
-                                  title={worked ? `Dia ${day}: trabalhou` : `Dia ${day}: não trabalhou`}
+                                  title={worked ? `${format(date, 'dd/MM')}: trabalhou` : `${format(date, 'dd/MM')}: não trabalhou`}
                                 >
-                                  {day}
+                                  {format(date, 'dd')}
                                 </div>
                               ))}
                             </div>

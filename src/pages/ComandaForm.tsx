@@ -27,6 +27,7 @@ export default function ComandaForm() {
   const isNew = !id;
 
   const { profile } = useAuth();
+  const isAdmin = profile?.role === 'ADMIN';
   const isOperator = profile?.role === 'OPERADOR';
   const isVendor = profile?.role === 'VENDEDOR';
 
@@ -39,8 +40,11 @@ export default function ComandaForm() {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [items, setItems] = useState<ComandaItem[]>([]);
   const [discount, setDiscount] = useState(0);
+  const [discountText, setDiscountText] = useState('0,00');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [status, setStatus] = useState<'Aberta' | 'Fechada'>('Aberta');
+  const [lockedOut, setLockedOut] = useState(false);
+  const [lockedReposition, setLockedReposition] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<'morning' | 'settlement'>('morning');
@@ -74,8 +78,11 @@ export default function ComandaForm() {
           setDate(c.date);
           setItems(c.items);
           setDiscount(c.discount);
+          setDiscountText(c.discount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
           setPayments(c.payments);
           setStatus(c.status);
+          setLockedOut(!!c.lockedOut);
+          setLockedReposition(!!c.lockedReposition);
           const drafts: Record<string, string> = {};
           c.items.forEach(i => { drafts[i.id] = i.quantityReposition > 0 ? String(i.quantityReposition) : ''; });
           setRepositionDraft(drafts);
@@ -88,10 +95,21 @@ export default function ComandaForm() {
   }, [id, isNew]);
 
   // ── Initialize items when vendor selected (new comanda) ──
-  const initializeItems = (vid: string) => {
+  const initializeItems = async (vid: string) => {
     setVendorId(vid);
+    if (!vid) return;
+
     if (isNew) {
-      setItems(allProducts.map(p => ({
+      const comandas = await db.getComandas();
+      const current = comandas.find(c => c.vendorId === vid && c.date === date);
+      if (current) {
+        const v = vendors.find(v => v.id === vid);
+        alert(`Atenção: O vendedor ${v?.name || ''} já possui uma comanda aberta hoje (${format(new Date(date), 'dd/MM')}). Escolha outro vendedor ou verifique em comandas abertas.`);
+        setVendorId('');
+        return;
+      }
+
+      const initialItems = allProducts.map(p => ({
         id: uuidv4(),
         productId: p.id,
         quantityOut: 0,
@@ -99,7 +117,22 @@ export default function ComandaForm() {
         quantityReturn: 0,
         priceFactoryFrozen: p.priceFactory,
         profitVendorFrozen: p.profitVendor,
-      })));
+      }));
+      setItems(initialItems);
+
+      setSaving(true);
+      const c = await db.saveComanda({
+        vendorId: vid,
+        date,
+        items: initialItems,
+        discount: 0,
+        payments: [],
+        status: 'Aberta',
+        lockedOut: false,
+        lockedReposition: false,
+      });
+      setSaving(false);
+      navigate(`/comandas/${c.id}`);
     }
   };
 
@@ -146,6 +179,34 @@ export default function ComandaForm() {
   const removePayment = (pid: string) =>
     setPayments(prev => prev.filter(p => p.id !== pid));
 
+  const handleDiscountChange = (val: string) => {
+    const onlyNums = val.replace(/\D/g, '');
+    if (!onlyNums) {
+      setDiscountText('0,00');
+      setDiscount(0);
+      return;
+    }
+    let num = parseInt(onlyNums, 10) / 100;
+    
+    // Calcula subtotal para validar o desconto máximo permitido
+    const totalSubtotalAspen = items.reduce((acc, item) => {
+      const cargaTotal = item.quantityOut + item.quantityReposition;
+      const vendidos = Math.max(0, cargaTotal - item.quantityReturn);
+      return acc + (vendidos * item.priceFactoryFrozen);
+    }, 0);
+
+    if (num > totalSubtotalAspen && totalSubtotalAspen > 0) {
+      alert('O desconto não pode ser maior que o valor total da comanda!');
+      num = 0;
+    } else if (num > totalSubtotalAspen && totalSubtotalAspen === 0) {
+      // Se não há itens vendidos ainda, não deixa por desconto
+      num = 0;
+    }
+
+    setDiscountText(num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setDiscount(num);
+  };
+
   // ── Calculations ──
   // Carga Total = Saída Inicial + Reposição
   // Vendidos    = Carga Total  - Retorno
@@ -170,7 +231,7 @@ export default function ComandaForm() {
     const totalProfit = itemCalcs.reduce((acc, curr) => acc + curr.lucroVendedor, 0);
     const totalQtdVendidos = itemCalcs.reduce((acc, curr) => acc + curr.vendidos, 0);
 
-    const totalWithDiscount = totalSubtotalAspen - discount;
+    const totalWithDiscount = Math.max(0, totalSubtotalAspen - discount);
     const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
     const saldoDevedor = totalWithDiscount - totalPaid;
 
@@ -186,7 +247,7 @@ export default function ComandaForm() {
   }, [items, discount, payments, allProducts]);
 
   // ── Save ──
-  const handleSave = async (closeIt = false) => {
+  const handleSave = async (closeIt = false, overrides: Partial<Comanda> = {}) => {
     if (!vendorId) return;
     setSaving(true);
 
@@ -197,6 +258,9 @@ export default function ComandaForm() {
       discount,
       payments,
       status: closeIt ? 'Fechada' : status,
+      lockedOut,
+      lockedReposition,
+      ...overrides,
       ...(closeIt ? { closedAt: new Date().toISOString() } : {}),
     };
 
@@ -258,9 +322,9 @@ export default function ComandaForm() {
                 <span>Total Pago</span>
                 <strong>{formatCurrency(calcs.totalPaid)}</strong>
               </div>
-              <div className={`confirm-row confirm-row--saldo ${calcs.saldoDevedor > 0.005 ? 'saldo-danger' : 'saldo-success'}`}>
+              <div className={`confirm-row confirm-row--saldo ${Math.abs(calcs.saldoDevedor) > 0.005 ? 'saldo-danger' : 'saldo-success'}`}>
                 <span>Saldo Devedor</span>
-                <strong>{formatCurrency(Math.max(0, calcs.saldoDevedor))}</strong>
+                <strong>{formatCurrency(calcs.saldoDevedor)}</strong>
               </div>
             </div>
             <div className="confirm-actions">
@@ -339,10 +403,10 @@ export default function ComandaForm() {
               </button>
               {!isNew && !isOperator && (
                 <button
-                  className={`btn-close-comanda ${calcs.saldoDevedor > 0.005 ? 'btn-close-comanda--blocked' : ''}`}
+                  className={`btn-close-comanda ${Math.abs(calcs.saldoDevedor) > 0.005 ? 'btn-close-comanda--blocked' : ''}`}
                   onClick={() => {
-                    if (calcs.saldoDevedor > 0.005) {
-                      alert('Não é possível fechar a comanda: Existe um saldo devedor pendente. Por favor, registre o pagamento total.');
+                    if (Math.abs(calcs.saldoDevedor) > 0.005) {
+                      alert('Não é possível fechar a comanda: O saldo devedor precisa ser exatamente ZERO. Por favor, verifique os descontos ou pagamentos.');
                     } else {
                       setShowCloseConfirm(true);
                     }
@@ -487,7 +551,7 @@ export default function ComandaForm() {
                                   value={item.quantityOut === 0 ? '' : item.quantityOut}
                                   placeholder="0"
                                   className="qty-input"
-                                  disabled={isClosed}
+                                  disabled={isClosed || (lockedOut && !isAdmin)}
                                   onChange={e => updateItem(item.id, 'quantityOut', parseInt(e.target.value, 10) || 0)}
                                 />
                               )}
@@ -503,7 +567,7 @@ export default function ComandaForm() {
                                   value={repDraft}
                                   placeholder="0"
                                   className="qty-input qty-input--reposition"
-                                  disabled={isClosed}
+                                  disabled={isClosed || (lockedReposition && !isAdmin)}
                                   onChange={e => setRepositionDraft(prev => ({ ...prev, [item.id]: e.target.value }))}
                                   onBlur={() => commitReposition(item.id)}
                                 />
@@ -515,7 +579,7 @@ export default function ComandaForm() {
                               </span>
                             </td>
                             <td>
-                              {!isClosed && !isVendor && (
+                              {!isClosed && !isVendor && !isOperator && (
                                 <button
                                   className="btn-icon-danger"
                                   onClick={() => removeItem(item.id)}
@@ -552,6 +616,41 @@ export default function ComandaForm() {
                   </strong>
                 </div>
               </div>
+
+              {/* Lacre Saída Inicial */}
+              {!isClosed && !lockedOut && items.reduce((s,i) => s + i.quantityOut, 0) > 0 && (
+                <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => {
+                      if(confirm('Lacrar Saída Inicial? Os valores não poderão ser alterados.')) {
+                        setLockedOut(true);
+                        handleSave(false, { lockedOut: true });
+                      }
+                    }}
+                  >
+                    <Lock size={16} /> Finalizar Saída Inicial 🔒
+                  </button>
+                </div>
+              )}
+
+              {/* Lacre Reposição */}
+              {!isClosed && lockedOut && !lockedReposition && items.some(i => i.quantityReposition > 0) && (
+                <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="btn-primary" 
+                    style={{ background: '#eab308', color: 'black' }} 
+                    onClick={() => {
+                      if(confirm('Confirmar Reposição?')) {
+                        setLockedReposition(true);
+                        handleSave(false, { lockedReposition: true });
+                      }
+                    }}
+                  >
+                    <Package size={16} /> Confirmar Reposição 📦
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -663,10 +762,10 @@ export default function ComandaForm() {
                               <>
                                 <span className="discount-symbol">R$</span>
                                 <input
-                                  type="number" min={0} step="0.01" placeholder="0,00"
-                                  value={discount || ''}
+                                  type="text" placeholder="0,00"
+                                  value={discountText}
                                   disabled={isClosed}
-                                  onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+                                  onChange={e => handleDiscountChange(e.target.value)}
                                   className="discount-input"
                                 />
                               </>

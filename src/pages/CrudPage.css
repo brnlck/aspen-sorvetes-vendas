@@ -84,7 +84,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), #6d28d9);
+  background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,7 +102,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(0, 123, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,8 +163,8 @@
 }
 
 .modal {
-  background: #1a2540;
-  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 1.25rem;
   width: 100%;
   max-width: 560px;
@@ -254,7 +254,7 @@
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  border: 2px dashed rgba(139, 92, 246, 0.4);
+  border: 2px dashed rgba(0, 123, 255, 0.4);
   background: var(--bg-tertiary);
   cursor: pointer;
   overflow: hidden;
@@ -266,11 +266,11 @@
 
 .photo-drop-zone:hover {
   border-color: var(--accent-primary);
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(0, 123, 255, 0.06);
 }
 
 .photo-drop-zone--has-photo {
-  border: 2px solid rgba(139, 92, 246, 0.5);
+  border: 2px solid rgba(0, 123, 255, 0.5);
 }
 
 .photo-placeholder {
@@ -343,6 +343,6 @@
 /* Avatar with real photo */
 .vendor-avatar-img {
   flex-shrink: 0;
-  border: 2px solid rgba(139, 92, 246, 0.3);
+  border: 2px solid rgba(0, 123, 255, 0.3);
 }
 

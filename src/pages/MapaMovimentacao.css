@@ -23,9 +23,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.125rem;
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(0, 123, 255, 0.12);
   color: var(--accent-primary);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(0, 123, 255, 0.3);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 600;
@@ -34,7 +34,7 @@
 }
 
 .btn-print:hover {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(0, 123, 255, 0.2);
   border-color: var(--accent-primary);
   transform: translateY(-1px);
 }
@@ -178,9 +178,9 @@
 }
 
 .th-group--products {
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(0, 123, 255, 0.06);
   color: var(--accent-primary);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  border-bottom: 1px solid rgba(0, 123, 255, 0.2);
 }
 
 .th-group--totals {
@@ -234,7 +234,7 @@
 }
 
 .mapa-table tbody tr:hover td {
-  background: rgba(139, 92, 246, 0.04);
+  background: rgba(0, 123, 255, 0.04);
 }
 
 .row-even td { background: var(--bg-secondary); }
@@ -242,7 +242,7 @@
 
 .mapa-table td {
   padding: 0.75rem 0.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
@@ -269,7 +269,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+  background: var(--accent-primary);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -281,7 +281,7 @@
 
 .td-qty {
   text-align: center;
-  border-left: 1px solid rgba(255,255,255,0.04);
+  border-left: 1px solid var(--border-color);
 }
 
 .td-total-qty {
@@ -309,7 +309,7 @@
 .td-payment {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  border-left: 1px solid rgba(255,255,255,0.04);
+  border-left: 1px solid var(--border-color);
   white-space: nowrap;
   padding-right: 1rem;
 }
@@ -321,7 +321,7 @@
   justify-content: center;
   min-width: 32px;
   height: 24px;
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(0, 123, 255, 0.1);
   color: var(--accent-primary);
   border-radius: var(--radius-sm);
   font-weight: 700;
@@ -354,7 +354,7 @@
 
 /* ── Totals row ── */
 .totals-row {
-  background: rgba(139, 92, 246, 0.05);
+  background: rgba(0, 123, 255, 0.05);
   border-top: 2px solid var(--border-color);
 }
 
@@ -367,18 +367,18 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(0, 123, 255, 0.08);
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-primary);
   border-right: 2px solid var(--border-color);
-  border-top: 2px solid rgba(139, 92, 246, 0.3);
+  border-top: 2px solid rgba(0, 123, 255, 0.3);
 }
 
 .td-totals {
-  border-top: 2px solid rgba(139, 92, 246, 0.15);
+  border-top: 2px solid rgba(0, 123, 255, 0.15);
   color: var(--text-primary);
   font-size: 0.82rem;
 }
