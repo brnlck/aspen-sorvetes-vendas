@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
-import type { Comanda, ComandaItem, Payment, PaymentMethod, Product, Vendor } from '../types';
+import type { Comanda, ComandaItem, Payment, PaymentMethod, Product, Vendor, ComandaStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import {
   ArrowLeft, Plus, Trash2, Save, Lock, Unlock,
@@ -42,7 +42,7 @@ export default function ComandaForm() {
   const [discount, setDiscount] = useState(0);
   const [discountText, setDiscountText] = useState('0,00');
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [status, setStatus] = useState<'Aberta' | 'Fechada'>('Aberta');
+  const [status, setStatus] = useState<ComandaStatus>('Aberta');
   const [lockedOut, setLockedOut] = useState(false);
   const [lockedReposition, setLockedReposition] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -374,7 +374,7 @@ export default function ComandaForm() {
           )}
           <div>
             <h1 className="title" style={{ marginBottom: 0, lineHeight: 1.2 }}>
-              {isNew ? 'Nova Comanda' : vendor?.name ?? 'Carregando...'}
+              {isNew ? 'Abrir comanda' : vendor?.name ?? 'Carregando...'}
             </h1>
             {!isNew && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
@@ -465,16 +465,16 @@ export default function ComandaForm() {
         <>
           <div className="comanda-tabs">
             <button
-              className={`comanda-tab ${tab === 'morning' ? 'comanda-tab--active' : ''}`}
+              className={`comanda-tab comanda-tab--morning ${tab === 'morning' ? 'comanda-tab--active' : ''}`}
               onClick={() => setTab('morning')}
             >
-              <SunMedium size={18} /> Manhã — Saída
+              <SunMedium size={18} /> Manhã — Liberação
             </button>
             <button
-              className={`comanda-tab ${tab === 'settlement' ? 'comanda-tab--active' : ''}`}
+              className={`comanda-tab comanda-tab--evening ${tab === 'settlement' ? 'comanda-tab--active' : ''}`}
               onClick={() => setTab('settlement')}
             >
-              <Sunset size={18} /> Tarde — Acerto
+              <Sunset size={18} /> Tarde — Recebimento
             </button>
           </div>
 
@@ -711,7 +711,7 @@ export default function ComandaForm() {
                                 type="number" min={0} max={item.cargaTotal}
                                 value={item.quantityReturn === 0 ? '' : item.quantityReturn}
                                 placeholder="0"
-                                className="qty-input"
+                                className="qty-input qty-input--return"
                                 disabled={isClosed}
                                 onChange={e => updateItem(item.id, 'quantityReturn', parseInt(e.target.value, 10) || 0)}
                               />
@@ -737,6 +737,23 @@ export default function ComandaForm() {
                     </tfoot>
                   </table>
                 </div>
+                {/* novo botão 'Salvar Retorno' */}
+                {!isClosed && !isVendor && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                    <button
+                      className="btn-primary"
+                      style={{ background: 'var(--warning)', color: '#fff' }}
+                      onClick={() => {
+                        if(confirm('Salvar Retorno e avançar para Aguardando Pagamento?')) {
+                          handleSave(false, { status: 'Aguardando Pagamento' });
+                          setStatus('Aguardando Pagamento');
+                        }
+                      }}
+                    >
+                      <Save size={16} /> Salvar Retorno
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ── Financial panel ── */}

@@ -97,9 +97,18 @@
 }
 
 .comanda-tab--active {
-  color: var(--accent-primary);
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.comanda-tab--morning.comanda-tab--active {
   border-bottom-color: var(--accent-primary);
-  background: rgba(0, 123, 255, 0.05); /* very light blue */
+  background: rgba(59, 130, 246, 0.08); /* light blue */
+}
+
+.comanda-tab--evening.comanda-tab--active {
+  border-bottom-color: var(--warning);
+  background: rgba(245, 158, 11, 0.08); /* light orange */
 }
 
 /* Items */
@@ -177,13 +186,24 @@
   font-weight: 600;
 }
 
-/* Reposition input — subtle amber tint to distinguish from Saída Inicial */
+/* Reposition input — Azul suave */
 .qty-input--reposition {
-  border-color: rgba(245, 158, 11, 0.4) !important;
-  background: rgba(245, 158, 11, 0.04) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  background: rgba(59, 130, 246, 0.05) !important;
 }
 
 .qty-input--reposition:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Return input — Laranja suave */
+.qty-input--return {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background: rgba(245, 158, 11, 0.05) !important;
+}
+
+.qty-input--return:focus {
   border-color: var(--warning) !important;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
 }

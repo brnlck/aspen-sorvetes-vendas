@@ -191,6 +191,7 @@ tr:hover td {
 .badge.inactive { background: var(--danger-bg); color: var(--danger); }
 .badge.open { background: var(--warning-bg); color: var(--warning); }
 .badge.closed { background: var(--success-bg); color: var(--success); }
+.badge.warning { background: rgba(59, 130, 246, 0.1); color: var(--accent-primary); /* Blue */ }
 
 /* Grid Layouts */
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }

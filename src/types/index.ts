@@ -1,6 +1,7 @@
 export type Vendor = {
   id: string;
   name: string;
+  fullName?: string;
   cpf: string;
   phone: string;
   address: string;
@@ -36,7 +37,7 @@ export type Payment = {
   amount: number;
 };
 
-export type ComandaStatus = 'Aberta' | 'Fechada';
+export type ComandaStatus = 'Aberta' | 'Aguardando Pagamento' | 'Fechada';
 
 export type Comanda = {
   id: string;

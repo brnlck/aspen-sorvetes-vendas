@@ -10,6 +10,7 @@ import './CrudPage.css';
 
 interface VendorFormData {
   name: string;
+  fullName: string;
   cpf: string;
   phone: string;
   address: string;
@@ -18,7 +19,7 @@ interface VendorFormData {
 }
 
 const empty: VendorFormData = {
-  name: '', cpf: '', phone: '', address: '', status: 'Ativo', photo: '',
+  name: '', fullName: '', cpf: '', phone: '', address: '', status: 'Ativo', photo: '',
 };
 
 function formatCPF(v: string) {
@@ -108,7 +109,7 @@ export default function Vendors() {
   const openEdit = (v: Vendor) => {
     setEditingId(v.id);
     setForm({
-      name: v.name, cpf: v.cpf, phone: v.phone,
+      name: v.name, fullName: v.fullName ?? '', cpf: v.cpf, phone: v.phone,
       address: v.address, status: v.status,
       photo: v.photo ?? '',
     });
@@ -195,7 +196,8 @@ export default function Vendors() {
             <table>
               <thead>
                 <tr>
-                  <th>Vendedor</th>
+                  <th>Apelido</th>
+                  <th>Nome Completo</th>
                   <th>CPF</th>
                   <th>Telefone</th>
                   <th>Endereço</th>
@@ -210,6 +212,11 @@ export default function Vendors() {
                       <div className="vendor-cell">
                         <VendorAvatar vendor={v} size={36} className="vendor-avatar" />
                         <span className="vendor-name">{v.name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="cell-with-icon">
+                        {v.fullName || '—'}
                       </div>
                     </td>
                     <td>
@@ -306,12 +313,21 @@ export default function Vendors() {
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Nome Completo</label>
+                <input
+                  type="text"
+                  placeholder="Nome completo no documento"
+                  value={form.fullName}
+                  onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
+                />
+              </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Nome *</label>
+                  <label className="form-label">Apelido (exibição) *</label>
                   <input
                     type="text"
-                    placeholder="Nome completo"
+                    placeholder="Como é conhecido"
                     value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   />

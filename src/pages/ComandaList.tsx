@@ -4,7 +4,7 @@ import type { Comanda, Vendor } from '../types';
 import { Link } from 'react-router-dom';
 import {
   Plus, Search, Calendar, Eye, Clock,
-  CheckCircle2, ClipboardList, SunMedium, Sunset, Unlock,
+  CheckCircle2, ClipboardList, SunMedium, Sunset, Unlock, AlertCircle
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -65,13 +65,15 @@ export default function ComandaList() {
         !search ||
         vendor?.name.toLowerCase().includes(search.toLowerCase()) ||
         c.date.includes(search);
-      const matchStatus = statusFilter === 'Todas' || c.status === statusFilter;
+      const matchStatus = statusFilter === 'Todas' || 
+        (statusFilter === 'Aberta' && (c.status === 'Aberta' || c.status === 'Aguardando Pagamento')) ||
+        (statusFilter === 'Fechada' && c.status === 'Fechada');
       const matchDate   = !dateFilter || c.date === dateFilter;
       return matchSearch && matchStatus && matchDate;
     });
   }, [comandas, search, statusFilter, dateFilter, vendors]);
 
-  const openCount  = comandas.filter(c => c.status === 'Aberta').length;
+  const openCount  = comandas.filter(c => c.status === 'Aberta' || c.status === 'Aguardando Pagamento').length;
   const todayCount = comandas.filter(c => c.date === todayStr).length;
 
   // Subtotal bruto: (Saída + Reposição) × preço — exibido enquanto Aberta
@@ -84,9 +86,9 @@ export default function ComandaList() {
   // Valor líquido = Subtotal Bruto − Desconto — exibido após Fechar
   const getValorLiquido = (c: Comanda) => getSubtotalBruto(c) - (c.discount ?? 0);
 
-  // Valor exibido no card: bruto se Aberta, líquido se Fechada
+  // Valor exibido no card: bruto se Aberta ou Aguardando Pagamento, líquido se Fechada
   const getCardValue = (c: Comanda) =>
-    c.status === 'Aberta' ? getSubtotalBruto(c) : getValorLiquido(c);
+    (c.status === 'Aberta' || c.status === 'Aguardando Pagamento') ? getSubtotalBruto(c) : getValorLiquido(c);
 
   const getSaldo = (c: Comanda) => {
     const total = getValorLiquido(c);
@@ -114,7 +116,7 @@ export default function ComandaList() {
         </div>
         {!isVendor && (
           <Link to="/comandas/new" className="btn-primary" id="btn-new-comanda">
-            <Plus size={18} /> Nova Comanda
+            <Plus size={18} /> Abrir comanda
           </Link>
         )}
       </div>
@@ -199,7 +201,7 @@ export default function ComandaList() {
             </p>
             {!isVendor && (
               <Link to="/comandas/new" className="btn-primary">
-                Abrir primeira comanda do dia
+                Abrir comanda
               </Link>
             )}
           </div>
@@ -219,7 +221,7 @@ export default function ComandaList() {
 
             return (
               <Link to={`/comandas/${c.id}`} key={c.id}
-                className={`comanda-card ${c.status === 'Aberta' ? 'comanda-card--open' : ''}`}
+                className={`comanda-card ${(c.status === 'Aberta' || c.status === 'Aguardando Pagamento') ? 'comanda-card--open' : ''}`}
               >
                 <div className="comanda-card-left">
                   {vendor ? (
@@ -239,15 +241,15 @@ export default function ComandaList() {
                   </div>
                 </div>
                 <div className="comanda-card-right">
-                  <span className={`badge ${c.status === 'Aberta' ? 'open' : 'closed'}`}>
-                    {c.status === 'Aberta' ? <Clock size={11} /> : <CheckCircle2 size={11} />}
-                    {c.status === 'Aberta' ? 'Na rua' : 'Fechada'}
+                  <span className={`badge ${c.status === 'Aberta' ? 'open' : c.status === 'Aguardando Pagamento' ? 'warning' : 'closed'}`}>
+                    {c.status === 'Aberta' ? <Clock size={11} /> : c.status === 'Aguardando Pagamento' ? <AlertCircle size={11} /> : <CheckCircle2 size={11} />}
+                    {c.status === 'Aberta' ? 'Na rua' : c.status === 'Aguardando Pagamento' ? 'Aguardando Pag.' : 'Fechada'}
                   </span>
                   {!isOperator && (
                     <div className="comanda-total">
                       {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {c.status === 'Aberta' ? 'Subtotal bruto' : 'Valor líquido'}
+                        {(c.status === 'Aberta' || c.status === 'Aguardando Pagamento') ? 'Subtotal bruto' : 'Valor líquido'}
                       </div>
                     </div>
                   )}

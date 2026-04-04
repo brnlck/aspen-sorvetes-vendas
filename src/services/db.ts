@@ -14,22 +14,45 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
 
 class DBService {
   // ---- VENDORS ----
+  private mapVendor(row: any): Vendor {
+    return {
+      id: row.id,
+      name: row.name,
+      fullName: row.full_name,
+      cpf: row.cpf,
+      phone: row.phone,
+      address: row.address,
+      status: row.status as any,
+      photo: row.photo,
+      createdAt: row.created_at,
+    };
+  }
   async getVendors(): Promise<Vendor[]> {
     const { data, error } = await supabase.from('vendors').select('*').order('name');
     if (error) throw error;
-    return data || [];
+    return (data || []).map(r => this.mapVendor(r));
   }
 
   async saveVendor(vendorData: Omit<Vendor, 'id' | 'createdAt'>): Promise<Vendor> {
-    const { data, error } = await supabase.from('vendors').insert(vendorData).select().single();
+    const payload: any = { ...vendorData };
+    if ('fullName' in payload) {
+      payload.full_name = payload.fullName;
+      delete payload.fullName;
+    }
+    const { data, error } = await supabase.from('vendors').insert(payload).select().single();
     if (error) throw error;
-    return data;
+    return this.mapVendor(data);
   }
 
   async updateVendor(id: string, vendorData: Partial<Vendor>): Promise<Vendor> {
-    const { data, error } = await supabase.from('vendors').update(vendorData).eq('id', id).select().single();
+    const payload: any = { ...vendorData };
+    if ('fullName' in payload) {
+      payload.full_name = payload.fullName;
+      delete payload.fullName;
+    }
+    const { data, error } = await supabase.from('vendors').update(payload).eq('id', id).select().single();
     if (error) throw error;
-    return data;
+    return this.mapVendor(data);
   }
 
   // ---- PRODUCTS ----
@@ -118,7 +141,9 @@ class DBService {
       date: comanda.date,
       status: comanda.status,
       discount: comanda.discount,
-      closed_at: comanda.closedAt
+      closed_at: comanda.closedAt,
+      locked_out: comanda.lockedOut,
+      locked_reposition: comanda.lockedReposition
     }).select().single();
     if (cErr) throw cErr;
 
@@ -158,6 +183,8 @@ class DBService {
     if (comandaData.status !== undefined) cPayload.status = comandaData.status;
     if (comandaData.discount !== undefined) cPayload.discount = comandaData.discount;
     if ('closedAt' in comandaData) cPayload.closed_at = comandaData.closedAt;
+    if ('lockedOut' in comandaData) cPayload.locked_out = comandaData.lockedOut;
+    if ('lockedReposition' in comandaData) cPayload.locked_reposition = comandaData.lockedReposition;
 
     // Rewrite items if provided
     if (comandaData.items) {
@@ -204,6 +231,8 @@ class DBService {
       discount: Number(row.discount),
       createdAt: row.created_at,
       closedAt: row.closed_at,
+      lockedOut: row.locked_out,
+      lockedReposition: row.locked_reposition,
       items: (row.items || []).map((i: any) => ({
         id: i.id,
         productId: i.product_id,
